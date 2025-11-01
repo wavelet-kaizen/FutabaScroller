@@ -29,6 +29,8 @@ export interface TimelineState {
     executionStartMs: number;
     /** 再生速度倍率 (> 0)。 */
     speedMultiplier: number;
+    /** 倍率変更時点までの累計スレッド時刻。 */
+    baselineThreadTime?: Date;
 }
 
 export interface ValidationError {

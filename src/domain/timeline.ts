@@ -4,8 +4,12 @@ export class TimelineCalculator {
     getCurrentThreadTime(state: TimelineState, nowMs: number): Date {
         const elapsedMs = Math.max(0, nowMs - state.executionStartMs);
         const threadElapsedMs = elapsedMs * state.speedMultiplier;
-        const targetMs = state.threadStartTime.getTime() + threadElapsedMs;
 
+        if (state.baselineThreadTime) {
+            return new Date(state.baselineThreadTime.getTime() + threadElapsedMs);
+        }
+
+        const targetMs = state.threadStartTime.getTime() + threadElapsedMs;
         return new Date(targetMs);
     }
 

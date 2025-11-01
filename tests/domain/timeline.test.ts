@@ -73,6 +73,22 @@ describe('TimelineCalculator#getCurrentThreadTime', () => {
 
         expect(current.getTime()).toBe(base.getTime());
     });
+
+    test('baselineThreadTime が設定されている場合は累積計算を行う', () => {
+        const base = new Date(2024, 10, 2, 12, 0, 0);
+        const baseline = new Date(2024, 10, 2, 12, 1, 0);
+        const state: TimelineState = {
+            threadStartTime: base,
+            executionStartMs: 50_000,
+            speedMultiplier: 2,
+            baselineThreadTime: baseline,
+        };
+
+        const current = calculator.getCurrentThreadTime(state, 60_000);
+        const expected = new Date(baseline.getTime() + 20_000);
+
+        expect(current.getTime()).toBe(expected.getTime());
+    });
 });
 
 describe('TimelineCalculator#findPreviousResponse', () => {
