@@ -42,8 +42,12 @@ export function main(): ScriptInstance | null {
         }
 
         const calculator = new TimelineCalculator();
+
+        // コントローラ生成前に更新されたレスがある可能性があるため、最新を取得
+        const latestResponses = updateManager.getCurrentResponses();
+
         controller = new ScrollController(
-            responses,
+            latestResponses,
             settings,
             calculator,
             undefined,

@@ -91,8 +91,10 @@ export class ResponseUpdateManager {
                 newResponses,
             );
 
+            // 新規追加がなくても、削除や変更を反映するため常に更新
+            this.currentResponses = newResponses;
+
             if (added.length > 0) {
-                this.currentResponses = newResponses;
                 this.options.onResponsesAdded(added);
             }
         } catch (error) {

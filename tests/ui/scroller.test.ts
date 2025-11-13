@@ -311,4 +311,92 @@ describe('ScrollController', () => {
 
         controller.stop();
     });
+
+    test('appendResponses()で新規レスが追加される', () => {
+        const responses = createResponses();
+        const settings = { startResponseIndex: 1, speedMultiplier: 1 };
+        const scrollMock = jest.fn();
+
+        const timeline: Pick<
+            TimelineCalculator,
+            'getCurrentThreadTime' | 'findPreviousResponse'
+        > = {
+            getCurrentThreadTime: jest
+                .fn<(state: TimelineState, nowMs: number) => Date>()
+                .mockReturnValue(new Date(2024, 10, 2, 12, 0, 30)),
+            findPreviousResponse: jest
+                .fn<
+                    (responses: TimelineResponse[], current: Date) =>
+                        TimelineResponse | null
+                >()
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+        };
+
+        const controller = new ScrollController(
+            responses,
+            settings,
+            timeline as TimelineCalculator,
+            scrollMock,
+        );
+
+        // 新規レスを追加
+        const third = document.createElement('div');
+        const newResponses = [
+            {
+                timestamp: new Date(2024, 10, 2, 12, 2, 0),
+                element: third,
+                index: 3,
+                contentHash: 'hash3',
+            },
+        ];
+
+        controller.appendResponses(newResponses);
+
+        // 内部状態が更新されているかを確認（コンソールログで検証）
+        const consoleSpy = jest
+            .spyOn(console, 'log')
+            .mockImplementation(() => undefined);
+
+        controller.appendResponses(newResponses);
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+            expect.stringContaining('レスを追加: 1件'),
+        );
+
+        consoleSpy.mockRestore();
+        controller.stop();
+    });
+
+    test('appendResponses()で空配列を渡しても問題ない', () => {
+        const responses = createResponses();
+        const settings = { startResponseIndex: 1, speedMultiplier: 1 };
+        const scrollMock = jest.fn();
+
+        const timeline: Pick<
+            TimelineCalculator,
+            'getCurrentThreadTime' | 'findPreviousResponse'
+        > = {
+            getCurrentThreadTime: jest
+                .fn<(state: TimelineState, nowMs: number) => Date>()
+                .mockReturnValue(new Date(2024, 10, 2, 12, 0, 30)),
+            findPreviousResponse: jest
+                .fn<
+                    (responses: TimelineResponse[], current: Date) =>
+                        TimelineResponse | null
+                >()
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+        };
+
+        const controller = new ScrollController(
+            responses,
+            settings,
+            timeline as TimelineCalculator,
+            scrollMock,
+        );
+
+        // 空配列を渡しても エラーが発生しないことを確認
+        expect(() => controller.appendResponses([])).not.toThrow();
+
+        controller.stop();
+    });
 });
