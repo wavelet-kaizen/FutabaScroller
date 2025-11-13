@@ -11,8 +11,9 @@ Claude Code は Codex との対話コンテキストを保ちながら、複数�
 
 ### Codex の使い方
 - ターミナルで以下を実行すると Codex と対話できる。
+
 ```bash
-codex <<EOF
+codex exec <<EOF
 <質問・依頼内容>
 EOF
 ```

@@ -15,7 +15,14 @@ Codex は Claude Code を随時呼び出しながら、複数ターンにわた�
 ### 協業ワークフロー (ループ可)
 
 1 PROMPT 準備 最新のユーザー要件(ユーザから提示された解析用データ、参照ファイルパス等はかならず渡すこと) + これまでの議論要約を $PROMPT に格納
-2 Claude Code 呼び出し  bash\nclaude <<EOF\n$PROMPT\nEOF\n必要に応じ --max_tokens 等を追加
+2 Claude Code 呼び出し ターミナルで以下を実行すると Claude Code と対話できる。必要に応じ --max_tokens 等を追加。
+
+```bash
+claude -p --input-format text <<EOF
+$PROMPT
+EOF
+```
+
 3 出力貼り付け  Claude Code ➜ セクションに全文、長い場合は要約＋原文リンク
 4 Codex コメント  Codex ➜ セクションで Claude Code の提案を分析・統合し、次アクションを提示
 5 継続判定  ユーザー入力 or プラン継続で 1〜4 を繰り返す。「Codexコラボ終了」「ひとまずOK」等で通常モード復帰
