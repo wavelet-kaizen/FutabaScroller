@@ -1,5 +1,6 @@
 import { parseTimestamp } from '../parsers/timestamp';
 import { ResponseEntry } from '../types';
+import { computeContentHash } from '../utils/hash';
 import { SELECTORS } from './selectors';
 
 export function captureResponses(doc: Document = document): ResponseEntry[] {
@@ -25,10 +26,13 @@ export function captureResponses(doc: Document = document): ResponseEntry[] {
             return;
         }
 
+        const contentHash = computeContentHash(container, timestamp);
+
         responses.push({
             timestamp,
             element: container,
             index: idx + 1,
+            contentHash,
         });
     });
 

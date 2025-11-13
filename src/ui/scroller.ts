@@ -24,8 +24,8 @@ export class ScrollController {
     private intervalId: number | null = null;
     private executionStartMs: number | null = null;
     private baselineThreadTime: Date | null = null;
-    private readonly timelineResponses: TimelineResponse[];
-    private readonly responseMap: Map<number, ResponseEntry>;
+    private timelineResponses: TimelineResponse[];
+    private responseMap: Map<number, ResponseEntry>;
     private readonly speedOverlay = new SpeedOverlay();
     private readonly statusOverlay = new StatusOverlay();
     private keydownHandler: ((event: KeyboardEvent) => void) | null = null;
@@ -34,7 +34,7 @@ export class ScrollController {
     private currentThreadTime: Date | null = null;
 
     constructor(
-        private readonly responses: ResponseEntry[],
+        private responses: ResponseEntry[],
         private readonly settings: ThreadSettings,
         private readonly timeline: TimelineCalculator,
         private readonly scrollFn: (element: HTMLElement) => void = scrollResponseIntoView,
@@ -310,5 +310,32 @@ export class ScrollController {
         if (showTemporarily) {
             this.statusOverlay.showTemporarily();
         }
+    }
+
+    /**
+     * 新しいレスを追加する
+     * 内部の配列とマップを更新し、既存の再生状態を維持する
+     */
+    appendResponses(newResponses: ResponseEntry[]): void {
+        if (newResponses.length === 0) {
+            return;
+        }
+
+        // 既存の配列に追加
+        this.responses.push(...newResponses);
+
+        // タイムラインレスポンスを追加
+        const newTimelineResponses = newResponses.map((response) => ({
+            timestamp: response.timestamp,
+            index: response.index,
+        }));
+        this.timelineResponses.push(...newTimelineResponses);
+
+        // レスポンスマップを更新
+        for (const response of newResponses) {
+            this.responseMap.set(response.index, response);
+        }
+
+        console.log(`レスを追加: ${newResponses.length}件 (合計: ${this.responses.length}件)`);
     }
 }

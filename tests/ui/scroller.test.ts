@@ -13,11 +13,13 @@ function createResponses() {
             timestamp: new Date(2024, 10, 2, 12, 0, 0),
             element: first,
             index: 1,
+            contentHash: 'hash1',
         },
         {
             timestamp: new Date(2024, 10, 2, 12, 1, 0),
             element: second,
             index: 2,
+            contentHash: 'hash2',
         },
     ];
 }

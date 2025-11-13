@@ -4,6 +4,8 @@ export interface ResponseEntry {
     element: HTMLElement;
     /** DOM上の出現順（1-indexed） */
     index: number;
+    /** 本文のハッシュ値（レス同一性判定用） */
+    contentHash: string;
 }
 
 /** タイムライン計算専用の軽量レスデータ。 */
