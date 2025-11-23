@@ -6,14 +6,16 @@ declare global {
     }
 }
 
-(function run(): void {
+(async function run(): Promise<void> {
     if (window.__FUTABA_SCROLLER__) {
         window.__FUTABA_SCROLLER__.controller.stop();
         window.__FUTABA_SCROLLER__.updateManager.stop();
     }
 
-    const instance = main();
+    const instance = await main();
     if (instance) {
         window.__FUTABA_SCROLLER__ = instance;
     }
-})();
+})().catch((error: unknown) => {
+    console.error('FutabaScroller起動エラー:', error);
+});

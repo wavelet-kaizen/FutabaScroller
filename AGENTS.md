@@ -1,3 +1,23 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+ドキュメントはすべて日本語で作成し、ユーザへの回答は全て日本語で返してください。
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # Repository Guidelines
 必ず日本語で回答してください。
 
@@ -18,7 +38,7 @@ Codex は Claude Code を随時呼び出しながら、複数ターンにわた�
 2 Claude Code 呼び出し ターミナルで以下を実行すると Claude Code と対話できる。必要に応じ --max_tokens 等を追加。
 
 ```bash
-claude -p --input-format text <<EOF
+claude -p --input-format text << 'EOF'
 $PROMPT
 EOF
 ```

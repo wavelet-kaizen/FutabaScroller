@@ -40,6 +40,22 @@ export class StatusOverlay {
         }, STATUS_VISIBILITY_MS);
     }
 
+    showMessage(text: string): void {
+        const container = this.ensureContainer();
+        if (!container) {
+            return;
+        }
+
+        container.textContent = text;
+        container.style.display = 'block';
+
+        this.clearHideTimer();
+        this.hideTimeoutId = window.setTimeout(() => {
+            container.style.display = 'none';
+            this.hideTimeoutId = null;
+        }, STATUS_VISIBILITY_MS);
+    }
+
     destroy(): void {
         this.clearHideTimer();
         if (this.container) {

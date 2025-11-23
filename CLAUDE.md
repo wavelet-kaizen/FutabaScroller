@@ -1,3 +1,23 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+ドキュメントはすべて日本語で作成し、ユーザへの回答は全て日本語で返してください。
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # CLAUDE.md
 必ず日本語で回答してください。
 
@@ -13,7 +33,7 @@ Claude Code は Codex との対話コンテキストを保ちながら、複数�
 - ターミナルで以下を実行すると Codex と対話できる。
 
 ```bash
-codex exec <<EOF
+codex exec << 'EOF'
 <質問・依頼内容>
 EOF
 ```
@@ -23,7 +43,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FutabaScroller is a browser bookmarklet that automatically scrolls through Futaba (Japanese imageboard) threads based on timestamps. It captures response timestamps, lets users select a starting point with playback speed, and auto-scrolls to simulate the thread unfolding in real-time.
+FutabaScroller is a browser bookmarklet that automatically scrolls through Futaba (Japanese imageboard) threads based on timestamps. It now uses an HTML入力フォームで開始位置（レス番号/日時/No.）と速度・追加スレッドURLを入力し、起動時は一時停止状態で準備してから x キーで再生を開始する。複数スレッドを No. 昇順にマージし、重複No.は自動除外する。
 
 **必ず日本語で回答してください** (Always respond in Japanese when collaborating with Codex)
 
@@ -44,37 +64,28 @@ npx prettier --tab-width 4 --write futaba_scroller.js
 node -p "require('fs').readFileSync('futaba_scroller.js','utf8')"
 ```
 
+## 操作メモ（新しい入力UI）
+- ブックマークレット実行後に表示されるフォームで開始位置の形式（レス番号/日時/No.）と値、速度倍率を入力
+- 追加スレッドURLがあれば改行区切りで入力（ふたば本家/ふたクロ/tsumanne/Futafuta 対応、No.重複は除外）
+- 「開始」を押したらローディングオーバーレイ完了まで待機し、メインオーバーレイの「準備完了、xキーでスクロール開始」表示後に x キーで再生を開始
+- 再実行時はオーバーレイとポーリング状態がリセットされる
+- 開始位置の解決はマージ完了後に実施し、失敗時（レス番号範囲外/No.未発見/日時パース失敗）は入力フォームをエラーメッセージ付きで再表示して再入力を待つ
+- 日時指定でスレ開始前なら最初のレスが来るまで待機、スレ終了後なら開始時に最後のレスへ即スクロールしタイムライン終了扱い（ステータスオーバーレイで案内）
+
 ## Architecture
 
 ### Core Components
 
-The bookmarklet (`futaba_scroller.js`) is a self-contained IIFE with:
-
-1. **Response Capture** (`captureResponses()` at line 13): Queries DOM for `.cnw` elements containing timestamps, parses them, and stores in `responses` array
-2. **Timestamp Parser** (`parseTimestamp()` at line 52): Converts Japanese date format `YY/MM/DD(day)HH:MM:SS` to Date objects
-3. **User Settings** (`promptUserForSettings()` at line 69): Prompts for response number and playback speed multiplier
-4. **Scroll Logic** (`scrollToClosestResponse()` at line 132, `updateScroll()` at line 163): Calculates current thread time based on elapsed real time × speed multiplier, finds closest past response, and scrolls to it
-
-### Key State Variables
-
-- `responses[]`: Array of `{timestamp, element}` objects sorted chronologically
-- `threadStartTime`: Selected response's timestamp (user-chosen starting point)
-- `speedMultiplier`: Playback speed (e.g., 1.5 = 1.5x speed)
-- `startTime`: Real-world execution start timestamp
-
-### Timing Algorithm
-
-```
-currentThreadTime = threadStartTime + (Date.now() - startTime) * speedMultiplier
-```
-
-Every 500ms, finds the most recent response where `response.timestamp ≤ currentThreadTime` and scrolls to it.
+- **InputFormOverlay** (`src/ui/input_form.ts`): フルスクリーンのHTMLフォームで開始位置・速度・追加スレッドURLを入力、バリデーションと再実行時リセットを担当
+- **LoadingOverlay** (`src/ui/loading_overlay.ts`): 追加スレッド取得中のローディング表示とエラー表示
+- **Thread Merge** (`src/dom/thread_fetcher.ts`, `src/dom/merge.ts`): ふたば本家/ふたクロ/tsumanne/Futafuta ログを判定してレス要素を抽出し、No.昇順で重複除外しながらDOMへ挿入
+- **ScrollController** (`src/ui/scroller.ts`): 開始位置（レス番号/日時/No.）の解決、一時停止/再開、速度調整、ステータスオーバーレイ表示を管理
+- **ResponseUpdateManager** (`src/domain/response_update_manager.ts`): 10秒おきにレス差分を検出し、コントローラに追加
+- **Timestamp Parsing** (`src/parsers/timestamp.ts`): `YY/MM/DD(曜)HH:MM:SS` と `YYYY/MM/DD HH:MM:SS` をパースし、曜日チェックはオプション
 
 ## Testing
 
-Manual testing is primary: open a Futaba thread, paste bookmarklet in DevTools console, verify console logs show timestamps in order, input response number and speed, confirm smooth scrolling matches expected timeline.
-
-For new parsing logic or timing calculations, save sample Futaba thread HTML in `assets/fixtures/` and test with headless browser or Jest DOM harness.
+Manual testing is primary: open a Futaba thread, paste bookmarklet in DevTools console, HTMLフォームで開始位置と速度・追加URLを入力し、ローディング後に x キーで開始する。No.重複除外とマルチフォーマットマージ（ふたば本家/ふたクロ/tsumanne/Futafuta）を確認。パーサーやタイミング計算を変える場合は `assets/fixtures/` にサンプルHTMLを保存し、Jest + jsdom で検証。
 
 ## Coding Style
 

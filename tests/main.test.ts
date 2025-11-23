@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, jest, test } from '@jest/globals';
 
 import { main } from '../src/main';
-import { captureResponses } from '../src/dom/capture';
-import { promptUserForSettings } from '../src/ui/prompt';
-import { ScrollController } from '../src/ui/scroller';
 import { ResponseUpdateManager } from '../src/domain/response_update_manager';
+import { mergeThreads } from '../src/dom/merge';
+import { InputFormOverlay } from '../src/ui/input_form';
+import { LoadingOverlay } from '../src/ui/loading_overlay';
+import { ScrollController } from '../src/ui/scroller';
+import { ThreadSettings } from '../src/types';
 
-jest.mock('../src/dom/capture');
-jest.mock('../src/ui/prompt');
+jest.mock('../src/ui/input_form');
+jest.mock('../src/ui/loading_overlay');
+jest.mock('../src/dom/merge');
 jest.mock('../src/domain/timeline', () => {
     return {
         TimelineCalculator: jest.fn().mockImplementation(() => ({
@@ -19,15 +22,31 @@ jest.mock('../src/domain/timeline', () => {
 jest.mock('../src/ui/scroller');
 jest.mock('../src/domain/response_update_manager');
 
-const captureMock = captureResponses as jest.MockedFunction<typeof captureResponses>;
-const promptMock = promptUserForSettings as jest.MockedFunction<
-    typeof promptUserForSettings
->;
+const InputFormOverlayMock = InputFormOverlay as unknown as jest.Mock;
+const LoadingOverlayMock = LoadingOverlay as unknown as jest.Mock;
+const mergeThreadsMock = mergeThreads as jest.MockedFunction<typeof mergeThreads>;
 const ScrollControllerMock = ScrollController as unknown as jest.Mock;
 const ResponseUpdateManagerMock = ResponseUpdateManager as unknown as jest.Mock;
 
 describe('main', () => {
     let alertSpy: jest.SpiedFunction<typeof window.alert>;
+    let inputPromptMock: jest.MockedFunction<
+        (getCount: () => number) => Promise<ThreadSettings | null>
+    >;
+    let showWithErrorMock: jest.MockedFunction<
+        (
+            settings: ThreadSettings,
+            message: string,
+            field: 'startValue' | 'speedMultiplier' | 'urls',
+        ) => Promise<ThreadSettings | null>
+    >;
+    let loadingOverlayInstance: {
+        show: jest.Mock;
+        hide: jest.Mock;
+        updateProgress: jest.Mock;
+        showError: jest.Mock;
+        destroy: jest.Mock;
+    };
 
     beforeEach(() => {
         alertSpy = jest
@@ -35,6 +54,21 @@ describe('main', () => {
             .mockImplementation(() => undefined) as jest.SpiedFunction<
             typeof window.alert
         >;
+        inputPromptMock = jest.fn();
+        showWithErrorMock = jest.fn();
+        loadingOverlayInstance = {
+            show: jest.fn(),
+            hide: jest.fn(),
+            updateProgress: jest.fn(),
+            showError: jest.fn(),
+            destroy: jest.fn(),
+        };
+
+        InputFormOverlayMock.mockImplementation(() => ({
+            prompt: inputPromptMock,
+            showWithError: showWithErrorMock,
+        }));
+        LoadingOverlayMock.mockImplementation(() => loadingOverlayInstance);
         ScrollControllerMock.mockImplementation(() => ({
             start: jest.fn(),
             stop: jest.fn(),
@@ -44,8 +78,10 @@ describe('main', () => {
         ResponseUpdateManagerMock.mockImplementation(() => ({
             start: jest.fn(),
             stop: jest.fn(),
+            isRunning: jest.fn().mockReturnValue(true),
             getCurrentResponses: jest.fn().mockReturnValue([]),
         }));
+        mergeThreadsMock.mockReset();
     });
 
     afterEach(() => {
@@ -53,20 +89,21 @@ describe('main', () => {
         alertSpy.mockRestore();
     });
 
-    test('レスが存在しない場合はアラートを表示して終了する', () => {
+    test('レスが存在しない場合はアラートを表示して終了する', async () => {
         ResponseUpdateManagerMock.mockImplementation(() => ({
             start: jest.fn(),
             stop: jest.fn(),
+            isRunning: jest.fn().mockReturnValue(true),
             getCurrentResponses: jest.fn().mockReturnValue([]),
         }));
 
-        const result = main();
+        const result = await main();
 
         expect(result).toBeNull();
         expect(alertSpy).toHaveBeenCalled();
     });
 
-    test('設定入力がキャンセルされた場合はnullを返す', () => {
+    test('設定入力がキャンセルされた場合はnullを返す', async () => {
         const responses = [
             {
                 timestamp: new Date(2024, 10, 2, 12, 0, 0),
@@ -78,17 +115,18 @@ describe('main', () => {
         ResponseUpdateManagerMock.mockImplementation(() => ({
             start: jest.fn(),
             stop: jest.fn(),
+            isRunning: jest.fn().mockReturnValue(true),
             getCurrentResponses: jest.fn().mockReturnValue(responses),
         }));
-        promptMock.mockReturnValue(null);
+        inputPromptMock.mockResolvedValue(null);
 
-        const result = main();
+        const result = await main();
 
         expect(result).toBeNull();
         expect(alertSpy).not.toHaveBeenCalled();
     });
 
-    test('設定が入力された場合はスクロールを開始する', () => {
+    test('設定が入力された場合はスクロールを一時停止状態で準備する', async () => {
         const startMock = jest.fn();
         ScrollControllerMock.mockImplementation(() => ({
             start: startMock,
@@ -108,14 +146,100 @@ describe('main', () => {
         ResponseUpdateManagerMock.mockImplementation(() => ({
             start: jest.fn(),
             stop: jest.fn(),
+            isRunning: jest.fn().mockReturnValue(true),
             getCurrentResponses: jest.fn().mockReturnValue(responses),
         }));
-        promptMock.mockReturnValue({ startResponseIndex: 1, speedMultiplier: 1 });
 
-        const instance = main();
+        const settings: ThreadSettings = {
+            startMode: 'index',
+            startValue: 1,
+            startResponseIndex: 1,
+            speedMultiplier: 1,
+            additionalThreadUrls: [],
+        };
+        inputPromptMock.mockResolvedValue(settings);
+
+        const instance = await main();
 
         expect(instance).not.toBeNull();
-        expect(startMock).toHaveBeenCalled();
+        expect(startMock).toHaveBeenCalledWith({
+            startPaused: true,
+            startTime: expect.any(Date),
+        });
         expect(alertSpy).not.toHaveBeenCalled();
+        expect(showWithErrorMock).not.toHaveBeenCalled();
+    });
+
+    test('追加スレッド取得が失敗した場合は中断する', async () => {
+        const responses = [
+            {
+                timestamp: new Date(2024, 10, 2, 12, 0, 0),
+                element: document.createElement('div'),
+                index: 1,
+                contentHash: 'hash1',
+            },
+        ];
+        const stopMock = jest.fn();
+        ResponseUpdateManagerMock.mockImplementation(() => ({
+            start: jest.fn(),
+            stop: stopMock,
+            isRunning: jest.fn().mockReturnValue(true),
+            getCurrentResponses: jest.fn().mockReturnValue(responses),
+        }));
+
+        const settings: ThreadSettings = {
+            startMode: 'index',
+            startValue: 1,
+            startResponseIndex: 1,
+            speedMultiplier: 1,
+            additionalThreadUrls: ['https://example.com/thread.htm'],
+        };
+        inputPromptMock.mockResolvedValue(settings);
+        mergeThreadsMock.mockRejectedValue(new Error('取得失敗'));
+
+        const result = await main();
+
+        expect(result).toBeNull();
+        expect(alertSpy).toHaveBeenCalledWith('取得失敗');
+        expect(stopMock).toHaveBeenCalled();
+    });
+
+    test('開始位置解決に失敗した場合はフォームを再表示し、キャンセルされたら終了する', async () => {
+        const responses = [
+            {
+                timestamp: new Date(2024, 10, 2, 12, 0, 0),
+                element: document.createElement('div'),
+                index: 1,
+                contentHash: 'hash1',
+            },
+        ];
+        const stopMock = jest.fn();
+        ResponseUpdateManagerMock.mockImplementation(() => ({
+            start: jest.fn(),
+            stop: stopMock,
+            isRunning: jest.fn().mockReturnValue(true),
+            getCurrentResponses: jest.fn().mockReturnValue(responses),
+        }));
+
+        const settings: ThreadSettings = {
+            startMode: 'index',
+            startValue: 5,
+            startResponseIndex: 5,
+            speedMultiplier: 1,
+            additionalThreadUrls: [],
+        };
+        inputPromptMock.mockResolvedValue(settings);
+        showWithErrorMock.mockResolvedValue(null);
+
+        const result = await main();
+
+        expect(result).toBeNull();
+        expect(showWithErrorMock).toHaveBeenCalledWith(
+            settings,
+            expect.stringContaining('レス番号が範囲外'),
+            'startValue',
+        );
+        expect(stopMock).toHaveBeenCalled();
+        expect(ScrollControllerMock).not.toHaveBeenCalled();
     });
 });

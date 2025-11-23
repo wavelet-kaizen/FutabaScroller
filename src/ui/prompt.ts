@@ -35,8 +35,11 @@ export function promptUserForSettings(
         }
 
         return {
+            startMode: 'index',
+            startValue: responseResult.value,
             startResponseIndex: responseResult.value,
             speedMultiplier: speedResult.value,
+            additionalThreadUrls: [],
         };
     }
 

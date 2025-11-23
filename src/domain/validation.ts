@@ -1,3 +1,4 @@
+import { parseTimestamp } from '../parsers/timestamp';
 import { Result, ValidationError } from '../types';
 
 function failure<T = never>(error: ValidationError): Result<T, ValidationError> {
@@ -59,4 +60,56 @@ export function validateSpeedMultiplier(
     }
 
     return success(input);
+}
+
+export function validateTimestamp(
+    timestamp: string,
+): Result<Date, ValidationError> {
+    const parsed = parseTimestamp(timestamp, { skipWeekdayCheck: true });
+    if (!parsed) {
+        return failure({
+            code: 'TIMESTAMP_INVALID_FORMAT',
+            message:
+                "日時は `YY/MM/DD(曜)HH:MM:SS` または `YYYY/MM/DD HH:MM:SS` の形式で入力してください。",
+            input: timestamp,
+        });
+    }
+
+    return success(parsed);
+}
+
+export function validateNo(input: string): Result<string, ValidationError> {
+    const trimmed = input.trim();
+    const match = trimmed.match(/^No\.(\d+)$/);
+    if (!match) {
+        return failure({
+            code: 'NO_INVALID_FORMAT',
+            message: 'No.の形式が不正です。`No.123` のように入力してください。',
+            input,
+        });
+    }
+
+    const digits = match[1];
+    return success(`No.${digits}`);
+}
+
+export function validateUrl(input: string): Result<string, ValidationError> {
+    const trimmed = input.trim();
+    try {
+        const url = new URL(trimmed);
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+            return failure({
+                code: 'URL_INVALID_FORMAT',
+                message: 'URLは http または https で入力してください。',
+                input,
+            });
+        }
+        return success(url.toString());
+    } catch {
+        return failure({
+            code: 'URL_INVALID_FORMAT',
+            message: '有効なURLを入力してください。',
+            input,
+        });
+    }
 }

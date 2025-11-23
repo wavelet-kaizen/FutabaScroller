@@ -1,8 +1,11 @@
 import { describe, expect, test } from '@jest/globals';
 
 import {
+    validateNo,
     validateResponseIndex,
     validateSpeedMultiplier,
+    validateTimestamp,
+    validateUrl,
 } from '../../src/domain/validation';
 
 describe('validateResponseIndex', () => {
@@ -121,5 +124,82 @@ describe('validateSpeedMultiplier', () => {
 
         expect(small.success).toBe(true);
         expect(large.success).toBe(true);
+    });
+});
+
+describe('validateTimestamp', () => {
+    test('2桁年・曜日付きフォーマットを許可する', () => {
+        const result = validateTimestamp('24/11/02(土)12:34:56');
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.value.getFullYear()).toBe(2024);
+            expect(result.value.getMonth()).toBe(10);
+            expect(result.value.getDate()).toBe(2);
+        }
+    });
+
+    test('4桁年・曜日なしフォーマットを許可する', () => {
+        const result = validateTimestamp('2025/11/16 22:48:03');
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.value.getFullYear()).toBe(2025);
+            expect(result.value.getHours()).toBe(22);
+        }
+    });
+
+    test('不正な形式はエラーを返す', () => {
+        const result = validateTimestamp('2025/11/16(日)22:48');
+
+        expect(result.success).toBe(false);
+    });
+});
+
+describe('validateNo', () => {
+    test('正しいNo.形式を許可する', () => {
+        const result = validateNo('No.1373341055');
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.value).toBe('No.1373341055');
+        }
+    });
+
+    test('余分な空白を許容しつつ整形する', () => {
+        const result = validateNo('  No.123  ');
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.value).toBe('No.123');
+        }
+    });
+
+    test('数字以外を含む場合はエラー', () => {
+        const result = validateNo('No.ABC');
+
+        expect(result.success).toBe(false);
+    });
+});
+
+describe('validateUrl', () => {
+    test('http/httpsのURLを許可する', () => {
+        const httpsResult = validateUrl('https://example.com/thread.htm');
+        const httpResult = validateUrl('http://example.com/thread.htm');
+
+        expect(httpsResult.success).toBe(true);
+        expect(httpResult.success).toBe(true);
+    });
+
+    test('無効なURLはエラーを返す', () => {
+        const result = validateUrl('notaurl');
+
+        expect(result.success).toBe(false);
+    });
+
+    test('http/https以外のプロトコルは拒否する', () => {
+        const result = validateUrl('ftp://example.com/thread.htm');
+
+        expect(result.success).toBe(false);
     });
 });

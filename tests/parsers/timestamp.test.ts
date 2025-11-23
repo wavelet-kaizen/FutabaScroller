@@ -49,6 +49,16 @@ describe('parseTimestamp', () => {
         expect(result).toBeNull();
     });
 
+    test('skipWeekdayCheck指定時は曜日不一致でもパースする', () => {
+        const result = parseTimestamp('24/11/02(日)12:34:56', {
+            skipWeekdayCheck: true,
+        });
+        const expected = new Date(2024, 10, 2, 12, 34, 56);
+
+        expect(result).not.toBeNull();
+        expect(result?.getTime()).toBe(expected.getTime());
+    });
+
     test('存在しない日付の場合はnullを返す', () => {
         const result = parseTimestamp('24/02/30(金)12:34:56');
 
@@ -63,6 +73,20 @@ describe('parseTimestamp', () => {
 
     test('時刻部分が欠けている場合はnullを返す', () => {
         const result = parseTimestamp('24/11/02(土)');
+
+        expect(result).toBeNull();
+    });
+
+    test('4桁年・曜日なし形式をパースできる', () => {
+        const result = parseTimestamp('2025/11/16 22:48:03');
+        const expected = new Date(2025, 10, 16, 22, 48, 3);
+
+        expect(result).not.toBeNull();
+        expect(result?.getTime()).toBe(expected.getTime());
+    });
+
+    test('4桁年形式の不正な日付はnullを返す', () => {
+        const result = parseTimestamp('2025/13/16 22:48:03');
 
         expect(result).toBeNull();
     });

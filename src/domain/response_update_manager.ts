@@ -72,6 +72,10 @@ export class ResponseUpdateManager {
         }
     }
 
+    isRunning(): boolean {
+        return this.intervalId !== null;
+    }
+
     /**
      * 現在のレス配列を取得する
      */

@@ -1,5 +1,5 @@
 export const SELECTORS = {
-    threadContainer: 'body > div.thre',
+    threadContainer: 'body .thre',
     responseTimestamp: 'body > div.thre table .cnw',
 } as const;
 

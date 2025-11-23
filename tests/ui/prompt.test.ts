@@ -14,7 +14,13 @@ describe('promptUserForSettings', () => {
         const settings = promptUserForSettings(5, promptMock, alertMock);
 
         expect(settings).not.toBeNull();
-        expect(settings).toEqual({ startResponseIndex: 2, speedMultiplier: 1.5 });
+        expect(settings).toEqual({
+            startMode: 'index',
+            startValue: 2,
+            startResponseIndex: 2,
+            speedMultiplier: 1.5,
+            additionalThreadUrls: [],
+        });
         expect(alertMock).not.toHaveBeenCalled();
     });
 
@@ -30,7 +36,13 @@ describe('promptUserForSettings', () => {
         const settings = promptUserForSettings(5, promptMock, alertMock);
 
         expect(settings).not.toBeNull();
-        expect(settings).toEqual({ startResponseIndex: 2, speedMultiplier: 1 });
+        expect(settings).toEqual({
+            startMode: 'index',
+            startValue: 2,
+            startResponseIndex: 2,
+            speedMultiplier: 1,
+            additionalThreadUrls: [],
+        });
         expect(alertMock).toHaveBeenCalledTimes(1);
     });
 

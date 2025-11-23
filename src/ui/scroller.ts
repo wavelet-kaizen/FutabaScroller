@@ -1,10 +1,12 @@
 import { TimelineCalculator } from '../domain/timeline';
+import { resolveStartPosition } from '../domain/start_position';
 import { scrollResponseIntoView } from '../dom/scroll';
 import { SpeedOverlay } from './speed_overlay';
 import { StatusOverlay } from './status_overlay';
 import {
     ResponseEntry,
     ThreadSettings,
+    StartPositionResult,
     TimelineResponse,
     TimelineState,
 } from '../types';
@@ -20,6 +22,11 @@ enum PlaybackState {
     PAUSED = 'PAUSED',
 }
 
+type StartOptions = {
+    startPaused?: boolean;
+    startTime?: Date;
+};
+
 export class ScrollController {
     private intervalId: number | null = null;
     private executionStartMs: number | null = null;
@@ -32,6 +39,10 @@ export class ScrollController {
     private speedMultiplier: number;
     private playbackState: PlaybackState = PlaybackState.STOPPED;
     private currentThreadTime: Date | null = null;
+    private startThreadTime: Date | null = null;
+    private hasScrolledInitial = false;
+    private lastResponseTimestamp: Date | null = null;
+    private timelineEnded = false;
 
     constructor(
         private responses: ResponseEntry[],
@@ -50,29 +61,40 @@ export class ScrollController {
         );
 
         this.speedMultiplier = settings.speedMultiplier;
+        this.lastResponseTimestamp = this.getLastResponseTimestamp();
     }
 
-    start(): void {
+    start(options: StartOptions = {}): void {
         if (this.intervalId !== null) {
             this.stop();
         }
 
-        const startResponse = this.responseMap.get(
-            this.settings.startResponseIndex,
-        );
-        if (!startResponse) {
-            const message = `レス番号${this.settings.startResponseIndex}が存在しません。`;
-            console.error(message);
-            this.onError?.(message);
+        const resolvedStart: StartPositionResult = options.startTime
+            ? { success: true, value: options.startTime }
+            : resolveStartPosition(this.settings, this.responses);
+
+        if (!resolvedStart.success) {
+            console.error(resolvedStart.error.message);
+            this.onError?.(resolvedStart.error.message);
             return;
         }
 
-        this.executionStartMs = Date.now();
+        this.startThreadTime = resolvedStart.value;
+        this.currentThreadTime = resolvedStart.value;
+        this.executionStartMs = options.startPaused ? null : Date.now();
         this.baselineThreadTime = null;
         this.speedMultiplier = this.settings.speedMultiplier;
-        this.playbackState = PlaybackState.PLAYING;
-        this.currentThreadTime = startResponse.timestamp;
+        this.hasScrolledInitial = false;
+        this.timelineEnded = false;
+        this.playbackState = options.startPaused
+            ? PlaybackState.PAUSED
+            : PlaybackState.PLAYING;
         this.updateStatusOverlay(true);
+        if (options.startPaused) {
+            this.statusOverlay.showMessage('準備完了、xキーでスクロール開始');
+        }
+
+        this.lastResponseTimestamp = this.getLastResponseTimestamp();
 
         this.tick();
         this.intervalId = window.setInterval(() => this.tick(), UPDATE_INTERVAL_MS);
@@ -91,21 +113,17 @@ export class ScrollController {
         this.statusOverlay.destroy();
         this.playbackState = PlaybackState.STOPPED;
         this.currentThreadTime = null;
+        this.startThreadTime = null;
+        this.hasScrolledInitial = false;
+        this.timelineEnded = false;
     }
 
     isRunning(): boolean {
-        return this.playbackState !== PlaybackState.STOPPED;
+        return this.playbackState !== PlaybackState.STOPPED && !this.timelineEnded;
     }
 
     private tick(): void {
-        const startResponse = this.responseMap.get(
-            this.settings.startResponseIndex,
-        );
-        if (!startResponse) {
-            const message = `レス番号${this.settings.startResponseIndex}が存在しません。`;
-            console.error(message);
-            this.onError?.(message);
-            this.stop();
+        if (!this.startThreadTime) {
             return;
         }
 
@@ -114,7 +132,7 @@ export class ScrollController {
             this.executionStartMs !== null
         ) {
             const state: TimelineState = {
-                threadStartTime: startResponse.timestamp,
+                threadStartTime: this.startThreadTime,
                 executionStartMs: this.executionStartMs,
                 speedMultiplier: this.speedMultiplier,
                 baselineThreadTime: this.baselineThreadTime ?? undefined,
@@ -125,18 +143,30 @@ export class ScrollController {
                 Date.now(),
             );
             this.currentThreadTime = currentThreadTime;
+        } else if (!this.currentThreadTime) {
+            // 一時停止中でも現在時刻を持っておく（起動時即終了判定用）
+            this.currentThreadTime = this.startThreadTime;
         }
 
         this.updateStatusOverlay();
+
+        if (!this.currentThreadTime) {
+            return;
+        }
+
+        if (
+            this.lastResponseTimestamp &&
+            this.currentThreadTime.getTime() >
+                this.lastResponseTimestamp.getTime()
+        ) {
+            this.handleTimelineEnd();
+            return;
+        }
 
         if (
             this.playbackState === PlaybackState.PAUSED ||
             this.executionStartMs === null
         ) {
-            return;
-        }
-
-        if (!this.currentThreadTime) {
             return;
         }
 
@@ -149,6 +179,17 @@ export class ScrollController {
             return;
         }
 
+        if (!this.hasScrolledInitial && this.settings.startMode === 'index') {
+            const initial = this.responseMap.get(
+                this.settings.startResponseIndex,
+            );
+            if (initial) {
+                this.scrollFn(initial.element);
+                this.hasScrolledInitial = true;
+                return;
+            }
+        }
+
         const entry = this.responseMap.get(target.index);
         if (!entry) {
             console.error(`レス番号${target.index}に対応する要素が見つかりません。`);
@@ -156,6 +197,33 @@ export class ScrollController {
         }
 
         this.scrollFn(entry.element);
+    }
+
+    private handleTimelineEnd(): void {
+        if (this.timelineEnded) {
+            return;
+        }
+        this.timelineEnded = true;
+
+        const lastEntry =
+            this.responses.length > 0
+                ? this.responses[this.responses.length - 1]
+                : null;
+        if (lastEntry) {
+            this.currentThreadTime = lastEntry.timestamp;
+            this.scrollFn(lastEntry.element);
+        }
+
+        if (this.intervalId !== null) {
+            window.clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+
+        this.executionStartMs = null;
+        this.playbackState = PlaybackState.PAUSED;
+        this.updateStatusOverlay(true);
+        this.statusOverlay.showMessage('タイムライン終了');
+        this.unbindKeyboard();
     }
 
     private bindKeyboard(): void {
@@ -214,10 +282,7 @@ export class ScrollController {
             return;
         }
 
-        const startResponse = this.responseMap.get(
-            this.settings.startResponseIndex,
-        );
-        if (!startResponse) {
+        if (!this.startThreadTime) {
             return;
         }
 
@@ -232,7 +297,7 @@ export class ScrollController {
         }
 
         const currentState: TimelineState = {
-            threadStartTime: startResponse.timestamp,
+            threadStartTime: this.startThreadTime,
             executionStartMs: this.executionStartMs,
             speedMultiplier: this.speedMultiplier,
             baselineThreadTime: this.baselineThreadTime ?? undefined,
@@ -256,16 +321,13 @@ export class ScrollController {
             return;
         }
 
-        const startResponse = this.responseMap.get(
-            this.settings.startResponseIndex,
-        );
-        if (!startResponse) {
+        if (!this.startThreadTime) {
             return;
         }
 
         if (this.executionStartMs !== null) {
             const state: TimelineState = {
-                threadStartTime: startResponse.timestamp,
+                threadStartTime: this.startThreadTime,
                 executionStartMs: this.executionStartMs,
                 speedMultiplier: this.speedMultiplier,
                 baselineThreadTime: this.baselineThreadTime ?? undefined,
@@ -312,6 +374,20 @@ export class ScrollController {
         }
     }
 
+    private getLastResponseTimestamp(): Date | null {
+        if (this.responses.length === 0) {
+            return null;
+        }
+
+        let latest = this.responses[0].timestamp;
+        for (const response of this.responses) {
+            if (response.timestamp.getTime() > latest.getTime()) {
+                latest = response.timestamp;
+            }
+        }
+        return latest;
+    }
+
     /**
      * 新しいレスを追加する
      * 内部の配列とマップを更新し、既存の再生状態を維持する
@@ -336,6 +412,6 @@ export class ScrollController {
             this.responseMap.set(response.index, response);
         }
 
-        console.log(`レスを追加: ${newResponses.length}件 (合計: ${this.responses.length}件)`);
+        this.lastResponseTimestamp = this.getLastResponseTimestamp();
     }
 }
