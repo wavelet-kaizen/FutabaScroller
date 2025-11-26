@@ -6,6 +6,7 @@ const MINIMIZED_SIZE = 48;
 const PANEL_PADDING = 12;
 const CONTAINER_TRANSITION =
     'background-color 0.15s ease-out, box-shadow 0.2s ease-out, opacity 0.2s ease-out';
+const DRAG_ACTIVATION_THRESHOLD = 8;
 
 export class FloatingControlPanel {
     private container: HTMLDivElement | null = null;
@@ -27,10 +28,13 @@ export class FloatingControlPanel {
     private latestSpeed = 1;
     private latestPaused = false;
     private activeMessage: { text: string; isError: boolean } | null = null;
+    private pointerDown = false;
     private isDragging = false;
     private dragMoved = false;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
+    private dragStartX = 0;
+    private dragStartY = 0;
     private dragWidth = 0;
     private dragHeight = 0;
     private position: { x: number; y: number } | null = null;
@@ -487,21 +491,36 @@ export class FloatingControlPanel {
         this.dragHeight = rect.height;
         this.dragOffsetX = coords.x - rect.left;
         this.dragOffsetY = coords.y - rect.top;
-        this.isDragging = true;
+        this.dragStartX = coords.x;
+        this.dragStartY = coords.y;
+        this.pointerDown = true;
+        this.isDragging = false;
         this.dragMoved = false;
-        this.updateContainerTransition(false);
-        this.container.style.cursor = 'grabbing';
 
         this.bindDragListeners();
-        event.preventDefault();
     }
 
     private handleDragMove(event: TouchEvent | MouseEvent): void {
-        if (!this.isDragging || !this.container) {
+        if (!this.pointerDown || !this.container) {
             return;
         }
 
         const coords = this.getClientCoordinates(event);
+
+        if (!this.isDragging) {
+            const deltaX = Math.abs(coords.x - this.dragStartX);
+            const deltaY = Math.abs(coords.y - this.dragStartY);
+            if (
+                deltaX < DRAG_ACTIVATION_THRESHOLD &&
+                deltaY < DRAG_ACTIVATION_THRESHOLD
+            ) {
+                return;
+            }
+            this.isDragging = true;
+            this.updateContainerTransition(false);
+            this.container.style.cursor = 'grabbing';
+        }
+
         const width =
             this.dragWidth || this.container.getBoundingClientRect().width || MINIMIZED_SIZE;
         const height =
@@ -527,15 +546,21 @@ export class FloatingControlPanel {
     }
 
     private handleDragEnd(): void {
-        if (!this.isDragging) {
+        if (!this.pointerDown && !this.isDragging) {
             return;
         }
+        const wasDragging = this.isDragging;
+        this.pointerDown = false;
         this.isDragging = false;
         this.detachDragListeners();
-        this.updateContainerTransition(true);
-        if (this.container) {
-            this.container.style.cursor = 'grab';
+        if (wasDragging) {
+            this.updateContainerTransition(true);
+            if (this.container) {
+                this.container.style.cursor = 'grab';
+            }
         }
+        this.dragStartX = 0;
+        this.dragStartY = 0;
         this.dragWidth = 0;
         this.dragHeight = 0;
     }
