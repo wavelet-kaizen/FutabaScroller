@@ -20,6 +20,7 @@ describe('promptUserForSettings', () => {
             startResponseIndex: 2,
             speedMultiplier: 1.5,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         });
         expect(alertMock).not.toHaveBeenCalled();
     });
@@ -27,7 +28,7 @@ describe('promptUserForSettings', () => {
     test('無効な入力は再入力を促す', () => {
         const promptMock = jest
             .fn<(message: string, defaultValue?: string) => string | null>()
-            .mockReturnValueOnce('0, 1')
+            .mockReturnValueOnce('-1, 1')
             .mockReturnValueOnce('2,1');
         const alertMock = jest
             .fn<(message: string) => void>()
@@ -42,6 +43,7 @@ describe('promptUserForSettings', () => {
             startResponseIndex: 2,
             speedMultiplier: 1,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         });
         expect(alertMock).toHaveBeenCalledTimes(1);
     });

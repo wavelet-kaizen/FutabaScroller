@@ -12,13 +12,16 @@ export function resolveStartPosition(
 ): StartPositionResult {
     if (settings.startMode === 'index') {
         const targetIndex = settings.startResponseIndex;
-        if (!Number.isInteger(targetIndex) || targetIndex < 1) {
+        if (!Number.isInteger(targetIndex) || targetIndex < 0) {
             return failure({
                 type: 'index_out_of_range',
-                message: `レス番号が範囲外です（1〜${responses.length}）`,
+                message: `レス番号が範囲外です（0〜${Math.max(
+                    responses.length - 1,
+                    0,
+                )}）`,
                 validRange: {
-                    min: responses.length > 0 ? 1 : 0,
-                    max: responses.length,
+                    min: 0,
+                    max: Math.max(responses.length - 1, 0),
                 },
             });
         }
@@ -31,20 +34,23 @@ export function resolveStartPosition(
             return success(byResNo.timestamp);
         }
 
-        if (targetIndex > responses.length) {
+        if (targetIndex >= responses.length) {
             return failure({
                 type: 'index_out_of_range',
-                message: `レス番号が範囲外です（1〜${responses.length}）`,
+                message: `レス番号が範囲外です（0〜${Math.max(
+                    responses.length - 1,
+                    0,
+                )}）`,
                 validRange: {
-                    min: responses.length > 0 ? 1 : 0,
-                    max: responses.length,
+                    min: 0,
+                    max: Math.max(responses.length - 1, 0),
                 },
             });
         }
 
         const target =
             responses.find((response) => response.index === targetIndex) ??
-            responses[targetIndex - 1];
+            responses[targetIndex];
         if (!target) {
             return failure({
                 type: 'index_out_of_range',

@@ -15,6 +15,7 @@
 - **柔軟な開始位置**: レス番号、日時、No.のいずれかで開始位置を指定可能
 - **速度調整**: キーボードで再生速度を自由に変更（0.1倍〜10倍）
 - **一時停止/再開**: `x`キーで一時停止・再開をコントロール
+- **スマートフォン対応UI**: UI表示モードを「自動非表示/常駐表示」から選択。常駐表示では浮動コントロールパネルをドラッグで移動し、タッチで再生/一時停止・速度±が可能
 - **自動更新**: 10秒ごとに新着レスを自動取得
 - **対応サイト**:
   - ふたば☆ちゃんねる
@@ -44,14 +45,16 @@
 2. HTMLフォームが表示されるので、以下を入力:
    - **開始位置の形式**: レス番号/日時/No.のいずれかを選択
    - **開始位置**: 対応する値を入力
-     - レス番号: `5`（5番目のレスから）
+     - レス番号: `0`（1番目のレスから）、`4`（5番目のレスから）など ※0始まりのインデックス
      - 日時: `25/01/23(木)12:34:56` または `2025/01/23 12:34:56`
      - No.: `No.123456789`（「No.」プレフィックス付きで入力）
    - **速度倍率**: `1.0`（通常速度）、`2.0`（2倍速）など
+   - **UI表示モード**: 「自動非表示」（従来の5秒オーバーレイ）または「常駐表示」（浮動パネルでタッチ操作）
    - **追加スレッドURL**（任意）: 改行区切りで複数のスレッドURLを入力
 3. 「開始」ボタンをクリック
 4. ローディング完了後、ステータスオーバーレイに「準備完了、xキーでスクロール開始」と表示される
 5. `x`キーを押すとスクロール開始
+   - 常駐表示モードでは、浮動コントロールパネルをタップして表示モード（最小化/ステータス/フル）を切り替え、再生/一時停止や速度±ボタンをタッチ操作できます。パネルはドラッグで画面内へ移動可能で、ステータスとシステムメッセージは自動で消えません。
 
 ### キーボードショートカット
 
@@ -144,6 +147,7 @@ A bookmarklet that automatically scrolls through Futaba (Japanese imageboard) th
 - **Flexible start position**: Specify start position by response number, datetime, or No.
 - **Speed adjustment**: Change playback speed freely via keyboard (0.1x ~ 10x)
 - **Pause/Resume**: Control playback with the `x` key
+- **Mobile-friendly UI**: Choose between auto-hide and persistent UI modes. In persistent mode, a floating control panel stays on screen, can be dragged, and offers touch controls for play/pause and speed up/down
 - **Auto-update**: Automatically fetch new responses every 10 seconds
 - **Supported sites**:
   - Futaba Channel (futaba-chan)
@@ -173,14 +177,16 @@ A bookmarklet that automatically scrolls through Futaba (Japanese imageboard) th
 2. An HTML form will appear; enter the following:
    - **Start position format**: Choose from Response Number/Datetime/No.
    - **Start position value**: Enter the corresponding value
-     - Response Number: `5` (start from 5th response)
+     - Response Number: `0` (start from 1st response), `4` (start from 5th response), etc. ※0-based index
      - Datetime: `25/01/23(Thu)12:34:56` or `2025/01/23 12:34:56`
      - No.: `No.123456789` (must include "No." prefix)
    - **Speed multiplier**: `1.0` (normal speed), `2.0` (2x speed), etc.
+   - **UI display mode**: Choose auto-hide (classic 5s overlays) or persistent (floating panel with touch controls)
    - **Additional thread URLs** (optional): Enter multiple thread URLs separated by newlines
 3. Click the "Start" button
 4. After loading completes, the status overlay will show "準備完了、xキーでスクロール開始" (Ready, press x to start scrolling)
 5. Press `x` key to start scrolling
+   - In persistent mode, tap the floating control panel to switch views (minimized/status/full), drag it around the screen, and use the play/pause and speed ± buttons. Status and system messages stay visible until you change the view.
 
 ### Keyboard Shortcuts
 

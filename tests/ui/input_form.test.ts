@@ -62,7 +62,34 @@ describe('InputFormOverlay', () => {
                 'https://example.com/thread1.htm',
                 'https://example.com/thread2.htm',
             ],
+            uiMode: 'auto-hide',
         });
+    });
+
+    test('UI表示モードはデフォルトで自動非表示が選択され、常駐表示も選択できる', async () => {
+        const overlay = new InputFormOverlay();
+        const resultPromise = overlay.prompt(() => 5);
+
+        const autoHideRadio = document.querySelector<HTMLInputElement>(
+            'input[name="uiMode"][value="auto-hide"]',
+        );
+        const persistentRadio = document.querySelector<HTMLInputElement>(
+            'input[name="uiMode"][value="persistent"]',
+        );
+        const form = document.querySelector<HTMLFormElement>('[data-role="input-form"]');
+
+        if (!autoHideRadio || !persistentRadio || !form) {
+            throw new Error('UIモードの入力要素が見つかりません');
+        }
+
+        expect(autoHideRadio.checked).toBe(true);
+        expect(persistentRadio.checked).toBe(false);
+
+        persistentRadio.click();
+        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+        const result = await resultPromise;
+        expect(result?.uiMode).toBe('persistent');
     });
 
     test('日時モードの入力を受け付ける', async () => {
@@ -91,9 +118,10 @@ describe('InputFormOverlay', () => {
         expect(result).toEqual({
             startMode: 'timestamp',
             startValue: '2025/11/16 22:48:03',
-            startResponseIndex: 1,
+            startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         });
     });
 
@@ -130,9 +158,10 @@ describe('InputFormOverlay', () => {
         const settings = {
             startMode: 'timestamp' as const,
             startValue: '2024/01/01 00:00:00',
-            startResponseIndex: 1,
+            startResponseIndex: 0,
             speedMultiplier: 2,
             additionalThreadUrls: ['https://example.com/thread.htm'],
+            uiMode: 'auto-hide' as const,
         };
 
         const resultPromise = overlay.showWithError(

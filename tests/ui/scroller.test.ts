@@ -21,13 +21,13 @@ function createResponses() {
         {
             timestamp: new Date(2024, 10, 2, 12, 0, 0),
             element: first,
-            index: 1,
+            index: 0,
             contentHash: 'hash1',
         },
         {
             timestamp: new Date(2024, 10, 2, 12, 1, 0),
             element: second,
-            index: 2,
+            index: 1,
             contentHash: 'hash2',
         },
     ];
@@ -38,10 +38,11 @@ function createSettings(
 ): ThreadSettings {
     return {
         startMode: 'index',
-        startValue: 1,
-        startResponseIndex: 1,
+        startValue: 0,
+        startResponseIndex: 0,
         speedMultiplier: 1,
         additionalThreadUrls: [],
+        uiMode: 'auto-hide',
         ...overrides,
     };
 }
@@ -57,6 +58,8 @@ describe('ScrollController', () => {
     afterEach(() => {
         jest.useRealTimers();
         dateNowSpy.mockRestore();
+        document.body.innerHTML = '';
+        jest.clearAllMocks();
     });
 
     test('startでタイマーが作成されスクロールが実行される', () => {
@@ -77,7 +80,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[1].timestamp, index: 2 }),
+                .mockReturnValue({ timestamp: responses[1].timestamp, index: 1 }),
         };
 
         dateNowSpy
@@ -107,7 +110,7 @@ describe('ScrollController', () => {
 
     test('レス番号指定時は最初に指定レスへスクロールする', () => {
         const responses = createResponses();
-        const settings = createSettings({ startResponseIndex: 2, startValue: 2 });
+        const settings = createSettings({ startResponseIndex: 1, startValue: 1 });
         const scrollMock = jest.fn();
 
         const timeline: Pick<
@@ -164,7 +167,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         dateNowSpy.mockReturnValueOnce(1_000).mockReturnValue(2_000);
@@ -212,7 +215,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         dateNowSpy.mockReturnValue(1_000);
@@ -230,7 +233,7 @@ describe('ScrollController', () => {
         expect(consoleErrorSpy).toHaveBeenCalled();
         expect(controller.isRunning()).toBe(false);
         expect(errorMock).toHaveBeenCalledWith(
-            'レス番号が範囲外です（1〜2）',
+            'レス番号が範囲外です（0〜1）',
         );
         expect(scrollMock).not.toHaveBeenCalled();
 
@@ -261,7 +264,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         dateNowSpy.mockReturnValue(1_000);
@@ -411,6 +414,98 @@ describe('ScrollController', () => {
         expect(scrollMock).toHaveBeenCalledTimes(0);
     });
 
+    test('常駐モードで開始時にパネルが表示され、準備完了メッセージを表示する', () => {
+        const responses = createResponses();
+        const settings = createSettings({ uiMode: 'persistent' });
+        const scrollMock = jest.fn();
+
+        const timeline: Pick<
+            TimelineCalculator,
+            'getCurrentThreadTime' | 'findPreviousResponse'
+        > = {
+            getCurrentThreadTime: jest
+                .fn<(state: TimelineState, nowMs: number) => Date>()
+                .mockReturnValue(new Date(2024, 10, 2, 12, 0, 0)),
+            findPreviousResponse: jest
+                .fn<
+                    (responses: TimelineResponse[], current: Date) =>
+                        TimelineResponse | null
+                >()
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
+        };
+
+        dateNowSpy.mockReturnValue(1_000);
+
+        const controller = new ScrollController(
+            responses,
+            settings,
+            timeline as TimelineCalculator,
+            scrollMock,
+        );
+
+        controller.start({ startPaused: true });
+
+        const panel = document.querySelector<HTMLElement>(
+            '[data-role="floating-control"]',
+        );
+        expect(panel).not.toBeNull();
+        const messageBox = panel?.querySelector<HTMLElement>(
+            '[data-role="message-area"]',
+        );
+        expect(messageBox?.textContent).toContain('準備完了');
+        expect(document.querySelector('[data-role="status-overlay"]')).toBeNull();
+        expect(document.querySelector('[data-role="speed-overlay"]')).toBeNull();
+
+        controller.stop();
+    });
+
+    test('常駐モードでタイムライン終了メッセージをパネルに表示する', () => {
+        const responses = createResponses();
+        const settings = createSettings({ uiMode: 'persistent' });
+        const scrollMock = jest.fn();
+
+        const timeline: Pick<
+            TimelineCalculator,
+            'getCurrentThreadTime' | 'findPreviousResponse'
+        > = {
+            getCurrentThreadTime: jest
+                .fn<(state: TimelineState, nowMs: number) => Date>()
+                .mockReturnValue(new Date(2024, 10, 2, 12, 5, 0)),
+            findPreviousResponse: jest
+                .fn<
+                    (responses: TimelineResponse[], current: Date) =>
+                        TimelineResponse | null
+                >()
+                .mockReturnValue({
+                    timestamp: responses[1].timestamp,
+                    index: responses[1].index,
+                }),
+        };
+
+        dateNowSpy.mockReturnValue(1_000);
+
+        const controller = new ScrollController(
+            responses,
+            settings,
+            timeline as TimelineCalculator,
+            scrollMock,
+        );
+
+        controller.start({ startPaused: false });
+
+        const panel = document.querySelector<HTMLElement>(
+            '[data-role="floating-control"]',
+        );
+        const messageBox = panel?.querySelector<HTMLElement>(
+            '[data-role="message-area"]',
+        );
+
+        expect(messageBox?.textContent).toContain('タイムライン終了');
+        expect(controller.isRunning()).toBe(false);
+
+        controller.stop();
+    });
+
     test('dキーで速度が上がりオーバーレイが表示される', () => {
         const responses = createResponses();
         const settings = createSettings();
@@ -428,7 +523,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         dateNowSpy.mockReturnValue(1_000);
@@ -473,7 +568,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         dateNowSpy.mockReturnValue(1_000);
@@ -517,7 +612,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         const nowSequence = [1_000, 31_000, 31_000, 46_000, 46_000];
@@ -579,7 +674,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         dateNowSpy.mockReturnValue(1_000);
@@ -625,7 +720,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         const controller = new ScrollController(
@@ -641,7 +736,7 @@ describe('ScrollController', () => {
             {
                 timestamp: new Date(2024, 10, 2, 12, 2, 0),
                 element: third,
-                index: 3,
+                index: 2,
                 contentHash: 'hash3',
             },
         ];
@@ -672,7 +767,7 @@ describe('ScrollController', () => {
                     (responses: TimelineResponse[], current: Date) =>
                         TimelineResponse | null
                 >()
-                .mockReturnValue({ timestamp: responses[0].timestamp, index: 1 }),
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
         };
 
         const controller = new ScrollController(

@@ -93,16 +93,16 @@ describe('TimelineCalculator#getCurrentThreadTime', () => {
 
 describe('TimelineCalculator#findPreviousResponse', () => {
     const responses: TimelineResponse[] = [
-        { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 1 },
-        { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 2 },
-        { timestamp: new Date(2024, 10, 2, 12, 2, 0), index: 3 },
+        { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 0 },
+        { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 1 },
+        { timestamp: new Date(2024, 10, 2, 12, 2, 0), index: 2 },
     ];
 
     test('現在時刻以前で最も近いレスを返す', () => {
         const current = new Date(2024, 10, 2, 12, 1, 30);
         const result = calculator.findPreviousResponse(responses, current);
 
-        expect(result?.index).toBe(2);
+        expect(result?.index).toBe(1);
     });
 
     test('該当レスがない場合はnullを返す', () => {
@@ -114,14 +114,14 @@ describe('TimelineCalculator#findPreviousResponse', () => {
 
     test('同一タイムスタンプが複数存在する場合は最後のレスを返す', () => {
         const duplicated: TimelineResponse[] = [
+            { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 0 },
             { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 1 },
             { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 2 },
-            { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 3 },
         ];
         const current = new Date(2024, 10, 2, 12, 0, 0);
         const result = calculator.findPreviousResponse(duplicated, current);
 
-        expect(result?.index).toBe(3);
+        expect(result?.index).toBe(2);
     });
 
     test('レスが存在しない場合はnullを返す', () => {
@@ -133,25 +133,25 @@ describe('TimelineCalculator#findPreviousResponse', () => {
 
     test('配列がソートされていなくても最も近いレスを返す', () => {
         const unsorted: TimelineResponse[] = [
-            { timestamp: new Date(2024, 10, 2, 12, 2, 0), index: 3 },
-            { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 1 },
-            { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 2 },
+            { timestamp: new Date(2024, 10, 2, 12, 2, 0), index: 2 },
+            { timestamp: new Date(2024, 10, 2, 12, 0, 0), index: 0 },
+            { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 1 },
         ];
         const current = new Date(2024, 10, 2, 12, 1, 30);
         const result = calculator.findPreviousResponse(unsorted, current);
 
-        expect(result?.index).toBe(2);
+        expect(result?.index).toBe(1);
     });
 
     test('完全一致するレスが複数ある場合は最後のレスを返す', () => {
         const sameTimestamp: TimelineResponse[] = [
+            { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 0 },
             { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 1 },
             { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 2 },
-            { timestamp: new Date(2024, 10, 2, 12, 1, 0), index: 3 },
         ];
         const current = new Date(2024, 10, 2, 12, 1, 0);
         const result = calculator.findPreviousResponse(sameTimestamp, current);
 
-        expect(result?.index).toBe(3);
+        expect(result?.index).toBe(2);
     });
 });

@@ -31,8 +31,8 @@ describe('ResponseUpdateManager', () => {
 
     test('start()で初回取得を行う', () => {
         const responses = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
-            createMockResponse(2, new Date(2024, 10, 2, 12, 1, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(1, new Date(2024, 10, 2, 12, 1, 0)),
         ];
         captureMock.mockReturnValue(responses);
 
@@ -45,7 +45,7 @@ describe('ResponseUpdateManager', () => {
 
     test('定期的にレスを再取得する', () => {
         const initial = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
         ];
         captureMock.mockReturnValue(initial);
 
@@ -65,13 +65,13 @@ describe('ResponseUpdateManager', () => {
 
     test('新規レスが追加されたときonResponsesAddedが呼ばれる', () => {
         const initial = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
-            createMockResponse(2, new Date(2024, 10, 2, 12, 1, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(1, new Date(2024, 10, 2, 12, 1, 0)),
         ];
 
         const updated = [
             ...initial,
-            createMockResponse(3, new Date(2024, 10, 2, 12, 2, 0)),
+            createMockResponse(2, new Date(2024, 10, 2, 12, 2, 0)),
         ];
 
         captureMock.mockReturnValueOnce(initial).mockReturnValueOnce(updated);
@@ -95,14 +95,14 @@ describe('ResponseUpdateManager', () => {
 
     test('複数の新規レスが追加された場合も正しく検出する', () => {
         const initial = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
         ];
 
         const updated = [
             ...initial,
-            createMockResponse(2, new Date(2024, 10, 2, 12, 1, 0)),
-            createMockResponse(3, new Date(2024, 10, 2, 12, 2, 0)),
-            createMockResponse(4, new Date(2024, 10, 2, 12, 3, 0)),
+            createMockResponse(1, new Date(2024, 10, 2, 12, 1, 0)),
+            createMockResponse(2, new Date(2024, 10, 2, 12, 2, 0)),
+            createMockResponse(3, new Date(2024, 10, 2, 12, 3, 0)),
         ];
 
         captureMock.mockReturnValueOnce(initial).mockReturnValueOnce(updated);
@@ -127,21 +127,21 @@ describe('ResponseUpdateManager', () => {
 
     test('レス削除後に新規追加された場合も検出する（回帰テスト）', () => {
         const initial = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
-            createMockResponse(2, new Date(2024, 10, 2, 12, 1, 0)),
-            createMockResponse(3, new Date(2024, 10, 2, 12, 2, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(1, new Date(2024, 10, 2, 12, 1, 0)),
+            createMockResponse(2, new Date(2024, 10, 2, 12, 2, 0)),
         ];
 
         // レス2が削除された状態
         const afterDeletion = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
-            createMockResponse(3, new Date(2024, 10, 2, 12, 2, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(2, new Date(2024, 10, 2, 12, 2, 0)),
         ];
 
         // その後、レス4が追加された状態
         const afterAddition = [
             ...afterDeletion,
-            createMockResponse(4, new Date(2024, 10, 2, 12, 3, 0)),
+            createMockResponse(3, new Date(2024, 10, 2, 12, 3, 0)),
         ];
 
         captureMock
@@ -172,14 +172,14 @@ describe('ResponseUpdateManager', () => {
 
     test('新規追加がない場合でもcurrentResponsesが更新される', () => {
         const initial = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
-            createMockResponse(2, new Date(2024, 10, 2, 12, 1, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(1, new Date(2024, 10, 2, 12, 1, 0)),
         ];
 
         // 内容が変わったが追加はない
         const sameLength = [
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
-            createMockResponse(3, new Date(2024, 10, 2, 12, 2, 0)), // index 2 -> 3
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(2, new Date(2024, 10, 2, 12, 2, 0)), // index 2 -> 2
         ];
 
         captureMock.mockReturnValueOnce(initial).mockReturnValueOnce(sameLength);
@@ -197,7 +197,7 @@ describe('ResponseUpdateManager', () => {
 
     test('エラー発生時にonErrorが呼ばれる', () => {
         captureMock.mockReturnValueOnce([
-            createMockResponse(1, new Date(2024, 10, 2, 12, 0, 0)),
+            createMockResponse(0, new Date(2024, 10, 2, 12, 0, 0)),
         ]);
 
         const error = new Error('Capture failed');

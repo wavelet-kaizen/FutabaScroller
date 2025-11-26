@@ -43,7 +43,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FutabaScroller is a browser bookmarklet that automatically scrolls through Futaba (Japanese imageboard) threads based on timestamps. It now uses an HTML入力フォームで開始位置（レス番号/日時/No.）と速度・追加スレッドURLを入力し、起動時は一時停止状態で準備してから x キーで再生を開始する。複数スレッドを No. 昇順にマージし、重複No.は自動除外する。
+FutabaScroller is a browser bookmarklet that automatically scrolls through Futaba (Japanese imageboard) threads based on timestamps. It now uses an HTML入力フォームで開始位置（レス番号/日時/No.）と速度・追加スレッドURLを入力し、起動時は一時停止状態で準備してから x キーで再生を開始する。複数スレッドを No. 昇順にマージし、重複No.は自動除外する。スマートフォン向けに、常駐表示モードの浮動コントロールパネル（再生/一時停止・速度±・ドラッグ移動・ステータス常時表示）を備え、キーボードなしでも操作できる。
 
 **必ず日本語で回答してください** (Always respond in Japanese when collaborating with Codex)
 
@@ -71,6 +71,7 @@ node -p "require('fs').readFileSync('futaba_scroller.js','utf8')"
 - 再実行時はオーバーレイとポーリング状態がリセットされる
 - 開始位置の解決はマージ完了後に実施し、失敗時（レス番号範囲外/No.未発見/日時パース失敗）は入力フォームをエラーメッセージ付きで再表示して再入力を待つ
 - 日時指定でスレ開始前なら最初のレスが来るまで待機、スレ終了後なら開始時に最後のレスへ即スクロールしタイムライン終了扱い（ステータスオーバーレイで案内）
+- UI表示モードは「自動非表示」（従来のステータス/速度オーバーレイを5秒で隠す）と「常駐表示」（浮動パネルを常時表示）の2種類。常駐モードではパネルをドラッグで位置変更でき、アイコンタップで最小化/ステータス/フル表示を切り替え、ボタンで再生/一時停止・速度±をタッチ操作できる。ステータス/システムメッセージは自動で消えない。
 
 ## Architecture
 
@@ -80,6 +81,7 @@ node -p "require('fs').readFileSync('futaba_scroller.js','utf8')"
 - **LoadingOverlay** (`src/ui/loading_overlay.ts`): 追加スレッド取得中のローディング表示とエラー表示
 - **Thread Merge** (`src/dom/thread_fetcher.ts`, `src/dom/merge.ts`): ふたば本家/ふたクロ/tsumanne/Futafuta ログを判定してレス要素を抽出し、No.昇順で重複除外しながらDOMへ挿入
 - **ScrollController** (`src/ui/scroller.ts`): 開始位置（レス番号/日時/No.）の解決、一時停止/再開、速度調整、ステータスオーバーレイ表示を管理
+- **FloatingControlPanel** (`src/ui/floating_control.ts`): 常駐表示モード用の浮動コントロール。ステータス常時表示、システムメッセージの常駐表示、再生/一時停止・速度±ボタン、ドラッグ移動を提供
 - **ResponseUpdateManager** (`src/domain/response_update_manager.ts`): 10秒おきにレス差分を検出し、コントローラに追加
 - **Timestamp Parsing** (`src/parsers/timestamp.ts`): `YY/MM/DD(曜)HH:MM:SS` と `YYYY/MM/DD HH:MM:SS` をパースし、曜日チェックはオプション
 

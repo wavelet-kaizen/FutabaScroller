@@ -37,8 +37,8 @@ describe('captureResponses', () => {
         const responses = captureResponses();
 
         expect(responses).toHaveLength(2);
-        expect(responses[0].index).toBe(1);
-        expect(responses[1].index).toBe(2);
+        expect(responses[0].index).toBe(0);
+        expect(responses[1].index).toBe(1);
         expect(responses[0].timestamp.getTime()).toBeLessThan(
             responses[1].timestamp.getTime(),
         );
@@ -57,7 +57,7 @@ describe('captureResponses', () => {
         const responses = captureResponses();
 
         expect(responses).toHaveLength(1);
-        expect(responses[0].index).toBe(1);
+        expect(responses[0].index).toBe(0);
         expect(responses[0].element).toBeInstanceOf(HTMLElement);
         expect(
             document.querySelector('.thre')?.textContent?.includes('テキストノード'),
@@ -133,7 +133,7 @@ describe('captureResponses', () => {
         const responses = captureResponses();
 
         expect(responses).toHaveLength(3);
-        expect(responses.map((r) => r.index)).toEqual([1, 2, 3]);
+        expect(responses.map((r) => r.index)).toEqual([0, 1, 2]);
         expect(
             responses.map((r) => r.timestamp.getTime()).sort((a, b) => a - b),
         ).toEqual(responses.map((r) => r.timestamp.getTime()));
@@ -162,7 +162,7 @@ describe('captureResponses', () => {
 
         const responses = captureResponses();
 
-        expect(responses.map((r) => r.index)).toEqual([1, 2, 3]);
+        expect(responses.map((r) => r.index)).toEqual([0, 1, 2]);
         expect(responses[0].timestamp.toISOString()).toBe(
             new Date(2024, 10, 2, 12, 10, 0).toISOString(),
         );
@@ -194,7 +194,7 @@ describe('captureResponses', () => {
         const responses = captureResponses();
 
         expect(responses).toHaveLength(1);
-        expect(responses[0].index).toBe(2);
+        expect(responses[0].index).toBe(1);
         expect(responses[0].timestamp.toISOString()).toBe(
             new Date(2024, 10, 2, 12, 36, 0).toISOString(),
         );

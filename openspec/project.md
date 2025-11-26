@@ -11,6 +11,7 @@ FutabaScroller は、双葉☆ちゃんねる（Futaba）の画像掲示板ス�
 - タイムスタンプベースで自動スクロール
 - 起動時は一時停止状態で準備し、xキーで開始
 - キーボードショートカットによる速度調整
+- UI表示モードの選択（自動非表示/常駐表示）。常駐表示では浮動コントロールパネルを常時表示し、タッチ操作で再生/一時停止や速度変更が可能
 - ローディング/ステータスオーバーレイ表示
 
 ## Tech Stack
@@ -66,7 +67,8 @@ src/
 │   ├── input_form.ts     # HTMLフォーム入力オーバーレイ
 │   ├── loading_overlay.ts # ローディングオーバーレイ
 │   ├── speed_overlay.ts  # 速度オーバーレイ
-│   └── status_overlay.ts # ステータスオーバーレイ
+│   ├── status_overlay.ts # ステータスオーバーレイ
+│   └── floating_control.ts # 常駐表示モードの浮動コントロール
 ├── dom/                  # DOM操作
 │   ├── capture.ts        # レスポンスキャプチャ
 │   ├── response_nodes.ts # レスノードのグループ化（形式判定に依存しない）
@@ -82,9 +84,10 @@ src/
 
 コアコンポーネント:
 1. **ScrollController** (`src/ui/scroller.ts:23`): スクロール制御、一時停止/再開、速度調整、基準時刻管理
-2. **ResponseUpdateManager** (`src/domain/response_update_manager.ts:16`): 10秒毎にレス更新を検出
-3. **TimelineCalculator** (`src/domain/timeline.ts`): ステートレスなタイムライン計算（TimelineState を受け取り現在時刻を計算）
-4. **SpeedOverlay / StatusOverlay** (`src/ui/*.ts`): オーバーレイUI描画
+2. **FloatingControlPanel** (`src/ui/floating_control.ts`): 常駐表示モードのタッチ操作UI（ステータス常時表示、メッセージ表示、再生/一時停止・速度±、ドラッグ移動）
+3. **ResponseUpdateManager** (`src/domain/response_update_manager.ts:16`): 10秒毎にレス更新を検出
+4. **TimelineCalculator** (`src/domain/timeline.ts`): ステートレスなタイムライン計算（TimelineState を受け取り現在時刻を計算）
+5. **SpeedOverlay / StatusOverlay** (`src/ui/*.ts`): オーバーレイUI描画
 
 ### Testing Strategy
 - **自動テスト**: Jest + jsdom で単体テスト（`npm test`）
@@ -104,6 +107,7 @@ src/
   - 追加スレッドURLを1件/複数件指定し、ローディング表示とNo.昇順マージ・重複除外を確認
   - ふたば本家/ふたクロ/tsumanneログを組み合わせてマージし、削除レス除外とラッパー保持を確認
   - キーボードショートカット（一時停止/速度調整）の動作確認
+  - UI表示モードを「常駐表示」にして、浮動コントロールパネルのドラッグ移動・タッチ操作（再生/一時停止・速度±）・ステータス/メッセージ常時表示を確認
 
 ### Git Workflow
 - **メインブランチ**: `master`

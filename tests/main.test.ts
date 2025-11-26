@@ -108,7 +108,7 @@ describe('main', () => {
             {
                 timestamp: new Date(2024, 10, 2, 12, 0, 0),
                 element: document.createElement('div'),
-                index: 1,
+                index: 0,
                 contentHash: 'hash1',
             },
         ];
@@ -139,7 +139,7 @@ describe('main', () => {
             {
                 timestamp: new Date(2024, 10, 2, 12, 0, 0),
                 element: document.createElement('div'),
-                index: 1,
+                index: 0,
                 contentHash: 'hash1',
             },
         ];
@@ -152,10 +152,11 @@ describe('main', () => {
 
         const settings: ThreadSettings = {
             startMode: 'index',
-            startValue: 1,
-            startResponseIndex: 1,
+            startValue: 0,
+            startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         };
         inputPromptMock.mockResolvedValue(settings);
 
@@ -175,7 +176,7 @@ describe('main', () => {
             {
                 timestamp: new Date(2024, 10, 2, 12, 0, 0),
                 element: document.createElement('div'),
-                index: 1,
+                index: 0,
                 contentHash: 'hash1',
             },
         ];
@@ -189,10 +190,11 @@ describe('main', () => {
 
         const settings: ThreadSettings = {
             startMode: 'index',
-            startValue: 1,
-            startResponseIndex: 1,
+            startValue: 0,
+            startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: ['https://example.com/thread.htm'],
+            uiMode: 'auto-hide',
         };
         inputPromptMock.mockResolvedValue(settings);
         mergeThreadsMock.mockRejectedValue(new Error('取得失敗'));
@@ -209,7 +211,7 @@ describe('main', () => {
             {
                 timestamp: new Date(2024, 10, 2, 12, 0, 0),
                 element: document.createElement('div'),
-                index: 1,
+                index: 0,
                 contentHash: 'hash1',
             },
         ];
@@ -227,6 +229,7 @@ describe('main', () => {
             startResponseIndex: 5,
             speedMultiplier: 1,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         };
         inputPromptMock.mockResolvedValue(settings);
         showWithErrorMock.mockResolvedValue(null);

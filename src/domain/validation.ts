@@ -29,10 +29,11 @@ export function validateResponseIndex(
         });
     }
 
-    if (input < 1 || input > responsesLength) {
+    const maxIndex = Math.max(responsesLength - 1, 0);
+    if (input < 0 || input > maxIndex) {
         return failure({
             code: 'RESPONSE_INDEX_OUT_OF_RANGE',
-            message: `レス番号は 1〜${responsesLength} の範囲で指定してください。`,
+            message: `レス番号は 0〜${maxIndex} の範囲で指定してください。`,
             input,
         });
     }

@@ -2,7 +2,7 @@
 export interface ResponseEntry {
     timestamp: Date;
     element: HTMLElement;
-    /** DOM上の出現順（1-indexed） */
+    /** DOM上の出現順（0-indexed） */
     index: number;
     /** 本文のハッシュ値（レス同一性判定用） */
     contentHash: string;
@@ -13,9 +13,12 @@ export interface ResponseEntry {
 /** タイムライン計算専用の軽量レスデータ。 */
 export interface TimelineResponse {
     timestamp: Date;
-    /** DOM上の出現順（1-indexed） */
+    /** DOM上の出現順（0-indexed） */
     index: number;
 }
+
+/** ステータスUIの表示モード。 */
+export type UiMode = 'auto-hide' | 'persistent';
 
 /** ユーザーが選択した設定値。 */
 export interface ThreadSettings {
@@ -23,17 +26,19 @@ export interface ThreadSettings {
     startMode: 'index' | 'timestamp' | 'no';
     /**
      * 再生開始の基準値。
-     * - startMode=index: レス番号（1-indexed）
+     * - startMode=index: レス番号（0-indexed）
      * - startMode=timestamp: タイムスタンプ文字列
      * - startMode=no: DOM上の No. テキスト
      */
     startValue: number | string;
-    /** startMode === 'index' の場合に使用するレス番号（1-indexed）。 */
+    /** startMode === 'index' の場合に使用するレス番号（0-indexed）。 */
     startResponseIndex: number;
     /** 再生速度倍率 (> 0)。 */
     speedMultiplier: number;
     /** 追加でマージするスレッドのURL一覧。 */
     additionalThreadUrls: string[];
+    /** UIの表示モード。 */
+    uiMode: UiMode;
 }
 
 /** 再生中のタイムライン状態。 */

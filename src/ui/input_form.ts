@@ -65,10 +65,11 @@ export class InputFormOverlay {
     private getDefaultSettings(): ThreadSettings {
         return {
             startMode: 'index',
-            startValue: 1,
-            startResponseIndex: 1,
+            startValue: 0,
+            startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         };
     }
 
@@ -125,6 +126,7 @@ export class InputFormOverlay {
         );
         const startValueField = this.createStartValueField(initialSettings);
         const speedField = this.createSpeedField(initialSettings.speedMultiplier);
+        const uiModeField = this.createUiModeField(initialSettings.uiMode);
         const additionalField = this.createAdditionalUrlField(
             initialSettings.additionalThreadUrls,
         );
@@ -134,6 +136,7 @@ export class InputFormOverlay {
         form.appendChild(startModeField);
         form.appendChild(startValueField);
         form.appendChild(speedField);
+        form.appendChild(uiModeField);
         form.appendChild(additionalField);
         form.appendChild(errorBox);
         form.appendChild(actionButtons);
@@ -301,6 +304,49 @@ export class InputFormOverlay {
         return wrapper;
     }
 
+    private createUiModeField(selected: ThreadSettings['uiMode']): HTMLElement {
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.gap = '6px';
+
+        const label = document.createElement('div');
+        label.textContent = 'UI表示モード';
+        label.style.fontWeight = 'bold';
+        label.style.fontSize = '14px';
+
+        const options = document.createElement('div');
+        options.style.display = 'flex';
+        options.style.gap = '12px';
+
+        const modes: { value: ThreadSettings['uiMode']; label: string }[] = [
+            { value: 'auto-hide', label: '自動非表示（従来）' },
+            { value: 'persistent', label: '常駐表示（スマホ向け）' },
+        ];
+
+        modes.forEach((mode) => {
+            const option = document.createElement('label');
+            option.style.display = 'flex';
+            option.style.alignItems = 'center';
+            option.style.gap = '6px';
+            option.style.fontSize = '13px';
+
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.name = 'uiMode';
+            input.value = mode.value;
+            input.checked = mode.value === selected;
+
+            option.appendChild(input);
+            option.appendChild(document.createTextNode(mode.label));
+            options.appendChild(option);
+        });
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(options);
+        return wrapper;
+    }
+
     private createAdditionalUrlField(urls: string[]): HTMLElement {
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex';
@@ -387,6 +433,18 @@ export class InputFormOverlay {
                 'index') as ThreadSettings['startMode'];
         }
 
+        const uiModeControl = form.elements.namedItem('uiMode');
+        let uiMode = 'auto-hide' as ThreadSettings['uiMode'];
+        if (uiModeControl instanceof RadioNodeList) {
+            if (uiModeControl.value === 'persistent') {
+                uiMode = 'persistent';
+            }
+        } else if (uiModeControl instanceof HTMLInputElement) {
+            if (uiModeControl.value === 'persistent') {
+                uiMode = 'persistent';
+            }
+        }
+
         const startValueInput = form.querySelector<HTMLInputElement>(
             '[data-role="start-value"]',
         );
@@ -422,16 +480,16 @@ export class InputFormOverlay {
             };
         }
 
-        let startResponseIndex = 1;
+        let startResponseIndex = 0;
         let startValue: number | string = startValueRaw;
 
         if (startMode === 'index') {
             const numericValue = Number(startValueRaw);
-            if (!Number.isInteger(numericValue) || numericValue < 1) {
+            if (!Number.isInteger(numericValue) || numericValue < 0) {
                 return {
                     success: false,
                     error: {
-                        message: 'レス番号は1以上の整数で入力してください。',
+                        message: 'レス番号は0以上の整数で入力してください。',
                         field: 'startValue',
                     },
                 };
@@ -489,6 +547,7 @@ export class InputFormOverlay {
                 startResponseIndex,
                 speedMultiplier: speedResult.value,
                 additionalThreadUrls,
+                uiMode,
             },
         };
     }
@@ -557,7 +616,7 @@ export class InputFormOverlay {
         if (mode === 'no') {
             return 'No.';
         }
-        return '1';
+        return '0';
     }
 
     private getStartValuePlaceholder(mode: ThreadSettings['startMode']): string {
@@ -567,7 +626,7 @@ export class InputFormOverlay {
         if (mode === 'no') {
             return 'No.1373341055';
         }
-        return '1';
+        return '0';
     }
 
     private getStartValueString(settings: ThreadSettings): string {
@@ -575,7 +634,7 @@ export class InputFormOverlay {
             return String(
                 typeof settings.startValue === 'number'
                     ? settings.startValue
-                    : settings.startResponseIndex || 1,
+                    : settings.startResponseIndex ?? 0,
             );
         }
         if (typeof settings.startValue === 'string') {

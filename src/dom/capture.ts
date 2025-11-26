@@ -44,7 +44,7 @@ export function captureResponses(doc: Document = document): ResponseEntry[] {
         responses.push({
             timestamp,
             element: anchor,
-            index: idx + 1,
+            index: idx,
             contentHash: computeGroupHash(nodes, timestamp, anchor),
             allNodes: nodes,
         });

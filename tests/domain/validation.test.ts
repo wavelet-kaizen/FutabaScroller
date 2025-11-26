@@ -9,7 +9,7 @@ import {
 } from '../../src/domain/validation';
 
 describe('validateResponseIndex', () => {
-    test('1以上かつレス配列長以下の値を許可する', () => {
+    test('0以上かつレス配列長未満の値を許可する', () => {
         const result = validateResponseIndex(2, 5);
 
         expect(result.success).toBe(true);
@@ -27,16 +27,14 @@ describe('validateResponseIndex', () => {
         }
     });
 
-    test('0や負数は拒否する', () => {
-        const resultZero = validateResponseIndex(0, 5);
+    test('負数は拒否する', () => {
         const resultNegative = validateResponseIndex(-1, 5);
 
-        expect(resultZero.success).toBe(false);
         expect(resultNegative.success).toBe(false);
     });
 
     test('上限を超える値は拒否する', () => {
-        const result = validateResponseIndex(6, 5);
+        const result = validateResponseIndex(5, 5);
 
         expect(result.success).toBe(false);
     });
@@ -48,7 +46,7 @@ describe('validateResponseIndex', () => {
     });
 
     test('レスが存在しない場合は常にエラーを返す', () => {
-        const result = validateResponseIndex(1, 0);
+        const result = validateResponseIndex(0, 0);
 
         expect(result.success).toBe(false);
     });

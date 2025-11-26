@@ -151,7 +151,7 @@ describe('mergeThreads', () => {
         ).toBe(true);
         expect(container.querySelector('.cno')?.textContent).toBe('No.200');
         expect(responses).toHaveLength(1);
-        expect(responses[0].index).toBe(1);
+        expect(responses[0].index).toBe(0);
         overlay.destroy();
     });
 
@@ -182,7 +182,7 @@ describe('mergeThreads', () => {
         );
 
         expect(responses).toHaveLength(1);
-        expect(responses[0].index).toBe(1);
+        expect(responses[0].index).toBe(0);
         expect(responses[0].timestamp.getHours()).toBe(12);
         overlay.destroy();
     });

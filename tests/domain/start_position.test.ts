@@ -44,25 +44,26 @@ function createResponse(
 
 const baseSettings: ThreadSettings = {
     startMode: 'index',
-    startValue: 1,
-    startResponseIndex: 1,
+    startValue: 0,
+    startResponseIndex: 0,
     speedMultiplier: 1,
     additionalThreadUrls: [],
+    uiMode: 'auto-hide',
 };
 
 describe('resolveStartPosition', () => {
     const responses: ResponseEntry[] = [
-        createResponse(1, new Date(2024, 10, 2, 12, 0, 0), 'No.100'),
-        createResponse(2, new Date(2024, 10, 2, 12, 1, 0), 'No.101'),
-        createResponse(3, new Date(2024, 10, 2, 12, 2, 0), 'No.102'),
+        createResponse(0, new Date(2024, 10, 2, 12, 0, 0), 'No.100'),
+        createResponse(1, new Date(2024, 10, 2, 12, 1, 0), 'No.101'),
+        createResponse(2, new Date(2024, 10, 2, 12, 2, 0), 'No.102'),
     ];
 
     test('indexモードで指定レスの時刻を返す', () => {
         const settings: ThreadSettings = {
             ...baseSettings,
             startMode: 'index',
-            startValue: 2,
-            startResponseIndex: 2,
+            startValue: 1,
+            startResponseIndex: 1,
         };
 
         const result = resolveStartPosition(settings, responses);
@@ -76,7 +77,7 @@ describe('resolveStartPosition', () => {
     test('noモードでマルチノードレスのNo.を解決できる', () => {
         const multiResponses: ResponseEntry[] = [
             createResponse(
-                1,
+                0,
                 new Date(2024, 10, 2, 12, 0, 0),
                 'No.200',
                 { asMultiNode: true },
@@ -110,7 +111,7 @@ describe('resolveStartPosition', () => {
         expect(result.success).toBe(false);
         if (!result.success && result.error.type === 'index_out_of_range') {
             expect(result.error.type).toBe('index_out_of_range');
-            expect(result.error.validRange).toEqual({ min: 1, max: 3 });
+            expect(result.error.validRange).toEqual({ min: 0, max: 2 });
         }
     });
 

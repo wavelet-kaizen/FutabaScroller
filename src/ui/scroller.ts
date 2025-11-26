@@ -3,6 +3,7 @@ import { resolveStartPosition } from '../domain/start_position';
 import { scrollResponseIntoView } from '../dom/scroll';
 import { SpeedOverlay } from './speed_overlay';
 import { StatusOverlay } from './status_overlay';
+import { FloatingControlPanel } from './floating_control';
 import {
     ResponseEntry,
     ThreadSettings,
@@ -33,8 +34,10 @@ export class ScrollController {
     private baselineThreadTime: Date | null = null;
     private timelineResponses: TimelineResponse[];
     private responseMap: Map<number, ResponseEntry>;
-    private readonly speedOverlay = new SpeedOverlay();
-    private readonly statusOverlay = new StatusOverlay();
+    private readonly isPersistentMode: boolean;
+    private readonly speedOverlay: SpeedOverlay | null;
+    private readonly statusOverlay: StatusOverlay | null;
+    private floatingControl: FloatingControlPanel | null = null;
     private keydownHandler: ((event: KeyboardEvent) => void) | null = null;
     private speedMultiplier: number;
     private playbackState: PlaybackState = PlaybackState.STOPPED;
@@ -60,6 +63,13 @@ export class ScrollController {
             responses.map((response) => [response.index, response] as const),
         );
 
+        this.isPersistentMode = settings.uiMode === 'persistent';
+        this.speedOverlay = this.isPersistentMode ? null : new SpeedOverlay();
+        this.statusOverlay = this.isPersistentMode ? null : new StatusOverlay();
+        if (this.isPersistentMode) {
+            this.floatingControl = this.createFloatingControlPanel();
+        }
+
         this.speedMultiplier = settings.speedMultiplier;
         this.lastResponseTimestamp = this.getLastResponseTimestamp();
     }
@@ -67,6 +77,10 @@ export class ScrollController {
     start(options: StartOptions = {}): void {
         if (this.intervalId !== null) {
             this.stop();
+        }
+
+        if (this.isPersistentMode && !this.floatingControl) {
+            this.floatingControl = this.createFloatingControlPanel();
         }
 
         const resolvedStart: StartPositionResult = options.startTime
@@ -90,8 +104,11 @@ export class ScrollController {
             ? PlaybackState.PAUSED
             : PlaybackState.PLAYING;
         this.updateStatusOverlay(true);
+        if (this.isPersistentMode) {
+            this.floatingControl?.show();
+        }
         if (options.startPaused) {
-            this.statusOverlay.showMessage('準備完了、xキーでスクロール開始');
+            this.showStatusMessage('準備完了、xキーでスクロール開始');
         }
 
         this.lastResponseTimestamp = this.getLastResponseTimestamp();
@@ -109,8 +126,9 @@ export class ScrollController {
         this.executionStartMs = null;
         this.baselineThreadTime = null;
         this.unbindKeyboard();
-        this.speedOverlay.destroy();
-        this.statusOverlay.destroy();
+        this.speedOverlay?.destroy();
+        this.statusOverlay?.destroy();
+        this.cleanupFloatingControl();
         this.playbackState = PlaybackState.STOPPED;
         this.currentThreadTime = null;
         this.startThreadTime = null;
@@ -222,7 +240,7 @@ export class ScrollController {
         this.executionStartMs = null;
         this.playbackState = PlaybackState.PAUSED;
         this.updateStatusOverlay(true);
-        this.statusOverlay.showMessage('タイムライン終了');
+        this.showStatusMessage('タイムライン終了');
         this.unbindKeyboard();
     }
 
@@ -291,7 +309,9 @@ export class ScrollController {
             this.executionStartMs === null
         ) {
             this.speedMultiplier = clamped;
-            this.speedOverlay.show(this.speedMultiplier);
+            if (!this.isPersistentMode) {
+                this.speedOverlay?.show(this.speedMultiplier);
+            }
             this.updateStatusOverlay(true);
             return;
         }
@@ -312,7 +332,9 @@ export class ScrollController {
         this.currentThreadTime = currentThreadTime;
         this.executionStartMs = Date.now();
         this.speedMultiplier = clamped;
-        this.speedOverlay.show(this.speedMultiplier);
+        if (!this.isPersistentMode) {
+            this.speedOverlay?.show(this.speedMultiplier);
+        }
         this.updateStatusOverlay(true);
     }
 
@@ -364,13 +386,45 @@ export class ScrollController {
     }
 
     private updateStatusOverlay(showTemporarily = false): void {
-        this.statusOverlay.updateState(
+        if (this.isPersistentMode) {
+            this.floatingControl?.updateState(
+                this.currentThreadTime,
+                this.speedMultiplier,
+                this.playbackState === PlaybackState.PAUSED,
+            );
+            return;
+        }
+
+        this.statusOverlay?.updateState(
             this.currentThreadTime,
             this.speedMultiplier,
             this.playbackState === PlaybackState.PAUSED,
         );
         if (showTemporarily) {
-            this.statusOverlay.showTemporarily();
+            this.statusOverlay?.showTemporarily();
+        }
+    }
+
+    private showStatusMessage(text: string): void {
+        if (this.isPersistentMode) {
+            this.floatingControl?.showMessage(text);
+        } else {
+            this.statusOverlay?.showMessage(text);
+        }
+    }
+
+    private createFloatingControlPanel(): FloatingControlPanel {
+        return new FloatingControlPanel(
+            () => this.togglePause(),
+            () => this.adjustSpeed(SPEED_MULTIPLIER_STEP),
+            () => this.adjustSpeed(-SPEED_MULTIPLIER_STEP),
+        );
+    }
+
+    private cleanupFloatingControl(): void {
+        if (this.floatingControl) {
+            this.floatingControl.destroy();
+            this.floatingControl = null;
         }
     }
 

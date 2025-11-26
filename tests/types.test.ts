@@ -10,6 +10,7 @@ describe('ThreadSettings 型定義', () => {
             startResponseIndex: 3,
             speedMultiplier: 1.2,
             additionalThreadUrls: ['https://example.com/thread.htm'],
+            uiMode: 'auto-hide',
         };
 
         expect(settings.startMode).toBe('index');
@@ -21,16 +22,18 @@ describe('ThreadSettings 型定義', () => {
         const timestampSettings: ThreadSettings = {
             startMode: 'timestamp',
             startValue: '2025/11/16 22:48:03',
-            startResponseIndex: 1,
+            startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         };
         const noSettings: ThreadSettings = {
             startMode: 'no',
             startValue: 'No.123',
-            startResponseIndex: 1,
+            startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         };
 
         expect(typeof timestampSettings.startValue).toBe('string');

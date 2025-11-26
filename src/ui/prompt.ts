@@ -2,8 +2,8 @@ import { validateResponseIndex, validateSpeedMultiplier } from '../domain/valida
 import { ThreadSettings } from '../types';
 
 const INPUT_MESSAGE =
-    'レス番号と速度倍率を、カンマ区切りで入力してください。\n例: 123,1.5';
-const DEFAULT_INPUT = '1,1';
+    'レス番号（0始まり）と速度倍率を、カンマ区切りで入力してください。\n例: 0,1.5';
+const DEFAULT_INPUT = '0,1';
 const MAX_ATTEMPTS = 10;
 
 export function promptUserForSettings(
@@ -40,6 +40,7 @@ export function promptUserForSettings(
             startResponseIndex: responseResult.value,
             speedMultiplier: speedResult.value,
             additionalThreadUrls: [],
+            uiMode: 'auto-hide',
         };
     }
 
