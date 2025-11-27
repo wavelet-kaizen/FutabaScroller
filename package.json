@@ -1,6 +1,6 @@
 {
   "name": "futaba-scroller",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Auto-scroll Futaba threads based on timestamps",
   "private": true,
   "scripts": {
