@@ -31,19 +31,27 @@ describe('FloatingControlPanel', () => {
         const content = container?.querySelector<HTMLElement>('[data-role="content-area"]');
 
         expect(container).not.toBeNull();
+        // 初期はフル表示（fit-contentはjsdomで空文字列になるため、minWidthで確認）
+        expect(container?.style.minWidth).toBe('220px');
+        expect(container?.style.maxWidth).toBe('none');
+        expect(content?.style.display).toBe('flex');
+        expect(controls?.style.display).toBe('flex');
+
         // 最小化モード
+        toggle?.click();
         expect(container?.style.width).toBe('60px');
         expect(content?.style.display).toBe('none');
 
         // ステータス表示モード
         toggle?.click();
-        expect(container?.style.width).toBe('280px');
+        expect(container?.style.minWidth).toBe('220px');
+        expect(container?.style.maxWidth).toBe('none');
         expect(content?.style.display).toBe('flex');
         expect(controls?.style.display).toBe('none');
 
         // フル表示モード
         toggle?.click();
-        expect(container?.style.width).toBe('280px');
+        expect(container?.style.minWidth).toBe('220px');
         expect(controls?.style.display).toBe('flex');
 
         // 最小化モードへ戻る
@@ -55,12 +63,6 @@ describe('FloatingControlPanel', () => {
     test('操作ボタンでコールバックが呼ばれる', () => {
         const panel = new FloatingControlPanel(playPauseMock, speedUpMock, speedDownMock);
         panel.show();
-
-        const toggle = document.querySelector<HTMLButtonElement>(
-            '[data-role="display-toggle"]',
-        );
-        toggle?.click();
-        toggle?.click(); // フル表示へ
 
         const playPause = document.querySelector<HTMLButtonElement>('[data-role="play-pause"]');
         const speedUp = document.querySelector<HTMLButtonElement>('[data-role="speed-up"]');
@@ -82,6 +84,7 @@ describe('FloatingControlPanel', () => {
         const toggle = document.querySelector<HTMLButtonElement>(
             '[data-role="display-toggle"]',
         );
+        toggle?.click();
         toggle?.click(); // ステータス表示
 
         panel.updateState(new Date(2024, 10, 2, 12, 34, 56), 1.4, true);
@@ -141,14 +144,18 @@ describe('FloatingControlPanel', () => {
 
         const container = document.querySelector<HTMLElement>('[data-role="floating-control"]');
 
-        // 最初は最小化モード
-        expect(container?.style.width).toBe('60px');
+        // 最初はフル表示（fit-contentはjsdomで空文字列になるため、minWidthで確認）
+        expect(container?.style.minWidth).toBe('220px');
 
         // メッセージ表示
+        const toggle = document.querySelector<HTMLButtonElement>(
+            '[data-role="display-toggle"]',
+        );
+        toggle?.click(); // 最小化へ
         panel.showMessage('準備完了');
 
-        // ステータスモードに切り替わる
-        expect(container?.style.width).toBe('280px');
+        // ステータスモードに切り替わる（fit-contentはjsdomで空文字列になるため、minWidthで確認）
+        expect(container?.style.minWidth).toBe('220px');
     });
 
     test('destroyでイベントリスナーとDOMが破棄される', () => {

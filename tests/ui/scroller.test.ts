@@ -452,9 +452,55 @@ describe('ScrollController', () => {
         const messageBox = panel?.querySelector<HTMLElement>(
             '[data-role="message-area"]',
         );
-        expect(messageBox?.textContent).toContain('準備完了');
+        expect(messageBox?.textContent).toBe(
+            '準備完了、▶ボタンまたは\nxキーで再生開始',
+        );
         expect(document.querySelector('[data-role="status-overlay"]')).toBeNull();
         expect(document.querySelector('[data-role="speed-overlay"]')).toBeNull();
+
+        controller.stop();
+    });
+
+    test('常駐モードで再生開始時に準備メッセージがクリアされる', () => {
+        const responses = createResponses();
+        const settings = createSettings({ uiMode: 'persistent' });
+        const scrollMock = jest.fn();
+
+        const timeline: Pick<
+            TimelineCalculator,
+            'getCurrentThreadTime' | 'findPreviousResponse'
+        > = {
+            getCurrentThreadTime: jest
+                .fn<(state: TimelineState, nowMs: number) => Date>()
+                .mockReturnValue(new Date(2024, 10, 2, 12, 0, 0)),
+            findPreviousResponse: jest
+                .fn<
+                    (responses: TimelineResponse[], current: Date) =>
+                        TimelineResponse | null
+                >()
+                .mockReturnValue({ timestamp: responses[0].timestamp, index: 0 }),
+        };
+
+        dateNowSpy.mockReturnValue(1_000);
+
+        const controller = new ScrollController(
+            responses,
+            settings,
+            timeline as TimelineCalculator,
+            scrollMock,
+        );
+
+        controller.start({ startPaused: true });
+
+        const messageBox = document.querySelector<HTMLElement>(
+            '[data-role="floating-control"] [data-role="message-area"]',
+        );
+        expect(messageBox?.style.display).toBe('block');
+
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
+        jest.advanceTimersByTime(500);
+
+        expect(messageBox?.style.display).toBe('none');
 
         controller.stop();
     });

@@ -23,7 +23,7 @@ export class FloatingControlPanel {
     private speedUpButton: HTMLButtonElement | null = null;
     private speedDownButton: HTMLButtonElement | null = null;
     private isVisible = false;
-    private displayMode: DisplayMode = 'minimized';
+    private displayMode: DisplayMode = 'full';
     private latestThreadTime: Date | null = null;
     private latestSpeed = 1;
     private latestPaused = false;
@@ -100,6 +100,11 @@ export class FloatingControlPanel {
             this.displayMode = 'status';
         }
         this.show();
+    }
+
+    clearMessage(): void {
+        this.activeMessage = null;
+        this.render();
     }
 
     private render(): void {
@@ -342,6 +347,7 @@ export class FloatingControlPanel {
         element.style.borderRadius = '6px';
         element.style.background = 'rgba(255, 255, 255, 0.06)';
         element.style.color = '#e8eaed';
+        element.style.whiteSpace = 'pre-line';
     }
 
     private applyControlsAreaStyles(element: HTMLDivElement): void {
@@ -376,12 +382,12 @@ export class FloatingControlPanel {
     }
 
     private cycleDisplayMode(): void {
-        if (this.displayMode === 'minimized') {
-            this.displayMode = 'status';
-        } else if (this.displayMode === 'status') {
-            this.displayMode = 'full';
-        } else {
+        if (this.displayMode === 'full') {
             this.displayMode = 'minimized';
+        } else if (this.displayMode === 'minimized') {
+            this.displayMode = 'status';
+        } else {
+            this.displayMode = 'full';
         }
         this.render();
     }
@@ -396,6 +402,8 @@ export class FloatingControlPanel {
             const minimizedWidth = MINIMIZED_SIZE + PANEL_PADDING;
             const minimizedHeight = MINIMIZED_SIZE + PANEL_PADDING;
             this.container.style.width = `${minimizedWidth}px`;
+            this.container.style.minWidth = '';
+            this.container.style.maxWidth = '';
             this.container.style.height = `${minimizedHeight}px`;
             this.container.style.padding = `${PANEL_PADDING}px 0 0 ${PANEL_PADDING}px`;
             this.container.style.justifyContent = 'flex-start';
@@ -403,7 +411,9 @@ export class FloatingControlPanel {
             this.contentArea.style.display = 'none';
         } else {
             // ステータス or フル: コンテンツ表示
-            this.container.style.width = '280px';
+            this.container.style.width = 'fit-content';
+            this.container.style.minWidth = '220px';
+            this.container.style.maxWidth = 'none';
             this.container.style.height = 'auto';
             this.container.style.padding = `${PANEL_PADDING}px`;
             this.container.style.justifyContent = 'flex-start';

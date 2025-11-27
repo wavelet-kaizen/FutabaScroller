@@ -69,7 +69,7 @@ export class InputFormOverlay {
             startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: [],
-            uiMode: 'auto-hide',
+            uiMode: 'persistent',
         };
     }
 

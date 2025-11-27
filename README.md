@@ -39,6 +39,18 @@
 3. [`dist/futaba_scroller.js`](dist/futaba_scroller.js) の内容をコピー＆ペースト
 4. Enterキーで実行
 
+#### 方法3: スマートフォンでの利用（CDN経由）
+
+1. ブラウザでブックマークを新規作成し、URL欄に以下のコードを貼り付けて保存
+   **このとき、ブックマークの名前を呼び出しやすい名前にしておくこと**
+   ```javascript
+   javascript:(function(){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/gh/wavelet-kaizen/FutabaScroller@latest/dist/futaba_scroller.js';document.body.appendChild(s);})();
+   ```
+2. スクロールしたいスレッドを開く
+3. アドレスバーをタップし、ブックマークの名前を入力する
+   (普通にブラウザのブックマーク欄から選択しても起動できないので注意。必ずアドレスバーから呼び出すこと)
+4. 検索候補の中から、1で登録したブックマークレットを選択する
+
 ### 使い方
 
 1. ふたばのスレッドページでブックマークレットを実行
@@ -49,11 +61,11 @@
      - 日時: `25/01/23(木)12:34:56` または `2025/01/23 12:34:56`
      - No.: `No.123456789`（「No.」プレフィックス付きで入力）
    - **速度倍率**: `1.0`（通常速度）、`2.0`（2倍速）など
-   - **UI表示モード**: 「自動非表示」（従来の5秒オーバーレイ）または「常駐表示」（浮動パネルでタッチ操作）
+   - **UI表示モード**: 「自動非表示」（従来の5秒オーバーレイ）または「常駐表示」（浮動パネルでタッチ操作）。デフォルトは常駐表示
    - **追加スレッドURL**（任意）: 改行区切りで複数のスレッドURLを入力
 3. 「開始」ボタンをクリック
-4. ローディング完了後、ステータスオーバーレイに「準備完了、xキーでスクロール開始」と表示される
-5. `x`キーを押すとスクロール開始
+4. ローディング完了後、常駐表示モードでは浮動パネルに「準備完了、▶ボタンまたはxキーで再生開始」、自動非表示モードでは「準備完了、xキーでスクロール開始」と表示される
+5. `x`キー（常駐表示では▶ボタンでも可）を押すとスクロール開始
    - 常駐表示モードでは、浮動コントロールパネルをタップして表示モード（最小化/ステータス/フル）を切り替え、再生/一時停止や速度±ボタンをタッチ操作できます。パネルはドラッグで画面内へ移動可能で、ステータスとシステムメッセージは自動で消えません。
 
 ### キーボードショートカット
@@ -171,6 +183,16 @@ A bookmarklet that automatically scrolls through Futaba (Japanese imageboard) th
 3. Copy and paste contents of [`dist/futaba_scroller.js`](dist/futaba_scroller.js)
 4. Press Enter to execute
 
+#### Method 3: Use on Smartphones (via CDN)
+
+1. Create a new bookmark, paste the following code into the URL field, and save it with an easy-to-type name
+   ```javascript
+   javascript:(function(){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/gh/wavelet-kaizen/FutabaScroller@latest/dist/futaba_scroller.js';document.body.appendChild(s);})();
+   ```
+2. Open the thread you want to scroll
+3. Tap the address bar and type the bookmark’s name (most mobile browsers won’t run bookmarklets directly from the bookmark list—invoke it via the address bar)
+4. Select the saved bookmarklet from the suggestions to run it
+
 ### Usage
 
 1. Execute the bookmarklet on a Futaba thread page
@@ -181,11 +203,11 @@ A bookmarklet that automatically scrolls through Futaba (Japanese imageboard) th
      - Datetime: `25/01/23(Thu)12:34:56` or `2025/01/23 12:34:56`
      - No.: `No.123456789` (must include "No." prefix)
    - **Speed multiplier**: `1.0` (normal speed), `2.0` (2x speed), etc.
-   - **UI display mode**: Choose auto-hide (classic 5s overlays) or persistent (floating panel with touch controls)
+   - **UI display mode**: Choose auto-hide (classic 5s overlays) or persistent (floating panel with touch controls). The default is persistent
    - **Additional thread URLs** (optional): Enter multiple thread URLs separated by newlines
 3. Click the "Start" button
-4. After loading completes, the status overlay will show "準備完了、xキーでスクロール開始" (Ready, press x to start scrolling)
-5. Press `x` key to start scrolling
+4. After loading completes, the persistent mode panel shows "準備完了、▶ボタンまたはxキーで再生開始" (Ready, press ▶ or x to start). In auto-hide mode the status overlay shows "準備完了、xキーでスクロール開始"
+5. Press the `x` key (or tap ▶ in persistent mode) to start scrolling
    - In persistent mode, tap the floating control panel to switch views (minimized/status/full), drag it around the screen, and use the play/pause and speed ± buttons. Status and system messages stay visible until you change the view.
 
 ### Keyboard Shortcuts

@@ -62,11 +62,11 @@ describe('InputFormOverlay', () => {
                 'https://example.com/thread1.htm',
                 'https://example.com/thread2.htm',
             ],
-            uiMode: 'auto-hide',
+            uiMode: 'persistent',
         });
     });
 
-    test('UI表示モードはデフォルトで自動非表示が選択され、常駐表示も選択できる', async () => {
+    test('UI表示モードはデフォルトで常駐表示が選択され、自動非表示も選択できる', async () => {
         const overlay = new InputFormOverlay();
         const resultPromise = overlay.prompt(() => 5);
 
@@ -82,14 +82,14 @@ describe('InputFormOverlay', () => {
             throw new Error('UIモードの入力要素が見つかりません');
         }
 
-        expect(autoHideRadio.checked).toBe(true);
-        expect(persistentRadio.checked).toBe(false);
+        expect(persistentRadio.checked).toBe(true);
+        expect(autoHideRadio.checked).toBe(false);
 
-        persistentRadio.click();
+        autoHideRadio.click();
         form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
 
         const result = await resultPromise;
-        expect(result?.uiMode).toBe('persistent');
+        expect(result?.uiMode).toBe('auto-hide');
     });
 
     test('日時モードの入力を受け付ける', async () => {
@@ -121,7 +121,7 @@ describe('InputFormOverlay', () => {
             startResponseIndex: 0,
             speedMultiplier: 1,
             additionalThreadUrls: [],
-            uiMode: 'auto-hide',
+            uiMode: 'persistent',
         });
     });
 

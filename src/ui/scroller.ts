@@ -108,7 +108,10 @@ export class ScrollController {
             this.floatingControl?.show();
         }
         if (options.startPaused) {
-            this.showStatusMessage('準備完了、xキーでスクロール開始');
+            const startMessage = this.isPersistentMode
+                ? '準備完了、▶ボタンまたは\nxキーで再生開始'
+                : '準備完了、xキーでスクロール開始';
+            this.showStatusMessage(startMessage);
         }
 
         this.lastResponseTimestamp = this.getLastResponseTimestamp();
@@ -379,6 +382,9 @@ export class ScrollController {
 
     private togglePause(): void {
         if (this.playbackState === PlaybackState.PAUSED) {
+            if (this.isPersistentMode) {
+                this.floatingControl?.clearMessage();
+            }
             this.resume();
         } else {
             this.pause();
