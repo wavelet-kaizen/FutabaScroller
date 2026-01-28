@@ -1,11 +1,13 @@
 import { parseTimestamp } from '../parsers/timestamp';
 import { ResponseEntry } from '../types';
 import { computeContentHash, simpleHash } from '../utils/hash';
+import { detectLogFormat } from './thread_fetcher';
 import {
     findElementInNodes,
     findThreadContainer,
     groupThreadResponses,
 } from './response_nodes';
+import { applyTsumanneImagePreviewsToGroups } from './tsumanne_image_preview';
 
 export function captureResponses(doc: Document = document): ResponseEntry[] {
     const container = findThreadContainer(doc);
@@ -15,6 +17,8 @@ export function captureResponses(doc: Document = document): ResponseEntry[] {
     }
 
     const groups = groupThreadResponses(container);
+    const isTsumanneDocument = detectLogFormat(doc) === 'tsumanne';
+    applyTsumanneImagePreviewsToGroups(groups, isTsumanneDocument);
     const responses: ResponseEntry[] = [];
 
     groups.forEach((nodes, idx) => {

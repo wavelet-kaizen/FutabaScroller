@@ -1,4 +1,8 @@
 import { cloneNodeGroup, groupThreadResponses } from './response_nodes';
+import {
+    applyTsumanneImagePreviewsToGroup,
+    markTsumanneNodes,
+} from './tsumanne_image_preview';
 
 export type LogFormat = 'futaba' | 'futaclo' | 'tsumanne' | 'futafuta';
 export type ResponseNodeGroup = Node[];
@@ -224,6 +228,8 @@ function extractTsumanneResponses(
                 normalizeTsumanneTimestamp(node);
             }
         });
+        markTsumanneNodes(cloned);
+        applyTsumanneImagePreviewsToGroup(cloned);
         return cloned;
     });
     return normalized;
