@@ -61,7 +61,7 @@ describe('mergeThreads', () => {
             .mockReturnValueOnce([[newResponse1]])
             .mockReturnValueOnce([[newResponse2]]);
         detectLogFormatMock.mockReturnValue('futaba');
-        fetchThreadHtmlMock.mockResolvedValue(new Document());
+        fetchThreadHtmlMock.mockResolvedValue({ doc: new Document(), finalUrl: 'https://example.com/' });
 
         const updateManager = {
             stop: jest.fn(),
@@ -101,7 +101,7 @@ describe('mergeThreads', () => {
 
         extractResponsesMock.mockReturnValue([[wrapper]]);
         detectLogFormatMock.mockReturnValue('futaclo');
-        fetchThreadHtmlMock.mockResolvedValue(new Document());
+        fetchThreadHtmlMock.mockResolvedValue({ doc: new Document(), finalUrl: 'https://example.com/' });
 
         const updateManager = {
             stop: jest.fn(),
@@ -129,7 +129,7 @@ describe('mergeThreads', () => {
         const ownerGroup = createFutafutaOwner(200, '24/11/02(土)12:20:00');
         extractResponsesMock.mockReturnValue([ownerGroup]);
         detectLogFormatMock.mockReturnValue('futafuta');
-        fetchThreadHtmlMock.mockResolvedValue(new Document());
+        fetchThreadHtmlMock.mockResolvedValue({ doc: new Document(), finalUrl: 'https://example.com/' });
 
         const updateManager = {
             stop: jest.fn(),
@@ -165,7 +165,7 @@ describe('mergeThreads', () => {
         const newResponse = createResponse(10, '24/11/02(土)12:10:00');
         extractResponsesMock.mockReturnValue([[newResponse]]);
         detectLogFormatMock.mockReturnValue('futaba');
-        fetchThreadHtmlMock.mockResolvedValue(new Document());
+        fetchThreadHtmlMock.mockResolvedValue({ doc: new Document(), finalUrl: 'https://example.com/' });
 
         const updateManager = {
             stop: jest.fn(),

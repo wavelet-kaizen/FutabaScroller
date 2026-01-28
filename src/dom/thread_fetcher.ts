@@ -50,11 +50,14 @@ function detectEncoding(buffer: ArrayBuffer, contentType: string | null): string
     return 'utf-8';
 }
 
-export async function fetchThreadHtml(url: string): Promise<Document> {
+export async function fetchThreadHtml(
+    url: string,
+): Promise<{ doc: Document; finalUrl: string }> {
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`スレッド ${url} を取得できませんでした (status: ${response.status})`);
     }
+    const finalUrl = response.url;
     const buffer = await response.arrayBuffer();
     const encoding = detectEncoding(buffer, response.headers.get('content-type'));
     let html: string;
@@ -64,7 +67,60 @@ export async function fetchThreadHtml(url: string): Promise<Document> {
         html = new TextDecoder('utf-8').decode(buffer);
     }
     const parser = new DOMParser();
-    return parser.parseFromString(html, 'text/html');
+    const doc = parser.parseFromString(html, 'text/html');
+    return { doc, finalUrl };
+}
+
+const URL_ATTRIBUTES: { selector: string; attr: string }[] = [
+    { selector: 'a[href]', attr: 'href' },
+    { selector: 'img[src]', attr: 'src' },
+    { selector: 'video[src]', attr: 'src' },
+    { selector: 'video[poster]', attr: 'poster' },
+    { selector: 'audio[src]', attr: 'src' },
+    { selector: 'source[src]', attr: 'src' },
+    { selector: 'area[href]', attr: 'href' },
+    { selector: 'object[data]', attr: 'data' },
+];
+
+export function convertRelativeUrls(
+    nodes: Node[],
+    baseUrl: string,
+): void {
+    for (const node of nodes) {
+        if (!(node instanceof Element)) {
+            continue;
+        }
+        for (const { selector, attr } of URL_ATTRIBUTES) {
+            if (node.matches(selector)) {
+                resolveAttribute(node, attr, baseUrl);
+            }
+            for (const el of node.querySelectorAll(selector)) {
+                resolveAttribute(el, attr, baseUrl);
+            }
+        }
+    }
+}
+
+function resolveAttribute(
+    element: Element,
+    attr: string,
+    baseUrl: string,
+): void {
+    const value = element.getAttribute(attr);
+    if (!value) {
+        return;
+    }
+    if (value.startsWith('#') || value.startsWith('data:')) {
+        return;
+    }
+    try {
+        const resolved = new URL(value, baseUrl);
+        if (resolved.protocol === 'http:' || resolved.protocol === 'https:') {
+            element.setAttribute(attr, resolved.href);
+        }
+    } catch {
+        // 不正なURLはそのまま保持
+    }
 }
 
 export function detectLogFormat(doc: Document): LogFormat {
@@ -98,40 +154,58 @@ export function detectLogFormat(doc: Document): LogFormat {
 export function extractResponses(
     doc: Document,
     format: LogFormat,
+    baseUrl: string,
 ): ResponseNodeGroup[] {
     switch (format) {
         case 'futaba':
-            return extractFutabaResponses(doc);
+            return extractFutabaResponses(doc, baseUrl);
         case 'futaclo':
-            return extractFutacloResponses(doc);
+            return extractFutacloResponses(doc, baseUrl);
         case 'tsumanne':
-            return extractTsumanneResponses(doc);
+            return extractTsumanneResponses(doc, baseUrl);
         case 'futafuta':
-            return extractFutafutaResponses(doc);
+            return extractFutafutaResponses(doc, baseUrl);
         default:
             return [];
     }
 }
 
-function extractFutabaResponses(doc: Document): ResponseNodeGroup[] {
+function extractFutabaResponses(
+    doc: Document,
+    baseUrl: string,
+): ResponseNodeGroup[] {
     const container = doc.querySelector('.thre');
     if (!container) {
         return [];
     }
     const groups = groupThreadResponses(container);
-    return groups.map((group) => cloneNodeGroup(group));
+    return groups.map((group) => {
+        const cloned = cloneNodeGroup(group);
+        convertRelativeUrls(cloned, baseUrl);
+        return cloned;
+    });
 }
 
-function extractFutacloResponses(doc: Document): ResponseNodeGroup[] {
+function extractFutacloResponses(
+    doc: Document,
+    baseUrl: string,
+): ResponseNodeGroup[] {
     const container = doc.querySelector('.thre');
     if (!container) {
         return [];
     }
     const groups = groupThreadResponses(container);
-    return groups.map((group) => cloneNodeGroup(group));
+    return groups.map((group) => {
+        const cloned = cloneNodeGroup(group);
+        convertRelativeUrls(cloned, baseUrl);
+        return cloned;
+    });
 }
 
-function extractTsumanneResponses(doc: Document): ResponseNodeGroup[] {
+function extractTsumanneResponses(
+    doc: Document,
+    baseUrl: string,
+): ResponseNodeGroup[] {
     const container = doc.querySelector('.thre');
     if (!container) {
         return [];
@@ -144,6 +218,7 @@ function extractTsumanneResponses(doc: Document): ResponseNodeGroup[] {
     });
     const normalized = groups.map((group) => {
         const cloned = cloneNodeGroup(group);
+        convertRelativeUrls(cloned, baseUrl);
         cloned.forEach((node) => {
             if (node instanceof HTMLElement) {
                 normalizeTsumanneTimestamp(node);
@@ -166,11 +241,18 @@ function normalizeTsumanneTimestamp(element: HTMLElement): void {
     });
 }
 
-function extractFutafutaResponses(doc: Document): ResponseNodeGroup[] {
+function extractFutafutaResponses(
+    doc: Document,
+    baseUrl: string,
+): ResponseNodeGroup[] {
     const container = doc.querySelector('.thre');
     if (!container) {
         return [];
     }
     const groups = groupThreadResponses(container);
-    return groups.map((group) => cloneNodeGroup(group));
+    return groups.map((group) => {
+        const cloned = cloneNodeGroup(group);
+        convertRelativeUrls(cloned, baseUrl);
+        return cloned;
+    });
 }

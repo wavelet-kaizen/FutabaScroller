@@ -65,9 +65,9 @@ async function fetchAllResponses(
 
     for (let index = 0; index < urls.length; index += 1) {
         const url = urls[index];
-        const doc = await fetchThreadHtml(url);
+        const { doc, finalUrl } = await fetchThreadHtml(url);
         const format = detectLogFormat(doc);
-        const responses = extractResponses(doc, format);
+        const responses = extractResponses(doc, format, finalUrl);
         results.push(...responses);
         loadingOverlay.updateProgress(index + 1, urls.length);
     }

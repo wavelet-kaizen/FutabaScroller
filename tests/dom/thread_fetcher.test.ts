@@ -1,6 +1,7 @@
 import { describe, expect, jest, test } from '@jest/globals';
 
 import {
+    convertRelativeUrls,
     detectLogFormat,
     extractResponses,
     fetchThreadHtml,
@@ -89,7 +90,7 @@ describe('extractResponses', () => {
     test('ふたば本家のレスを抽出する', () => {
         const doc = parseHtml(FUTABA_HTML);
 
-        const responses = extractResponses(doc, 'futaba');
+        const responses = extractResponses(doc, 'futaba', 'https://example.com/');
 
         expect(responses).toHaveLength(2);
         expect(responses[0][0]).toBeInstanceOf(HTMLTableElement);
@@ -98,7 +99,7 @@ describe('extractResponses', () => {
     test('ふたクロ形式ではDIVラッパーごと返す', () => {
         const doc = parseHtml(FUTACLO_HTML);
 
-        const responses = extractResponses(doc, 'futaclo');
+        const responses = extractResponses(doc, 'futaclo', 'https://example.com/');
 
         expect(responses).toHaveLength(1);
         expect(responses[0][0]).toBeInstanceOf(HTMLDivElement);
@@ -110,7 +111,7 @@ describe('extractResponses', () => {
     test('tsumanne形式では削除レスを除外しIDを取り除く', () => {
         const doc = parseHtml(TSUMANNE_HTML);
 
-        const responses = extractResponses(doc, 'tsumanne');
+        const responses = extractResponses(doc, 'tsumanne', 'https://example.com/');
 
         expect(responses).toHaveLength(2);
         expect(
@@ -127,7 +128,7 @@ describe('extractResponses', () => {
     test('Futafuta形式ではスレ主の非tableノード群と返信tableを抽出する', () => {
         const doc = parseHtml(FUTAFUTA_HTML);
 
-        const responses = extractResponses(doc, 'futafuta');
+        const responses = extractResponses(doc, 'futafuta', 'https://example.com/');
 
         expect(responses).toHaveLength(2);
         expect(responses[0].length).toBeGreaterThan(1);
@@ -165,6 +166,7 @@ describe('fetchThreadHtml', () => {
         mockFetch.mockResolvedValue({
             ok: true,
             status: 200,
+            url: 'https://example.com/thread.htm',
             headers: new Headers({
                 'content-type': 'text/html; charset=utf-8',
             }),
@@ -176,10 +178,11 @@ describe('fetchThreadHtml', () => {
         } as Response);
         global.fetch = mockFetch;
 
-        const doc = await fetchThreadHtml('https://example.com/thread.htm');
+        const { doc, finalUrl } = await fetchThreadHtml('https://example.com/thread.htm');
 
         expect(mockFetch).toHaveBeenCalledWith('https://example.com/thread.htm');
         expect(doc.querySelector('.thre')).not.toBeNull();
+        expect(finalUrl).toBe('https://example.com/thread.htm');
 
         global.fetch = originalFetch;
     });
@@ -191,6 +194,7 @@ describe('fetchThreadHtml', () => {
         mockFetch.mockResolvedValue({
             ok: true,
             status: 200,
+            url: 'https://example.com/thread-sjis.htm',
             headers: new Headers(),
             arrayBuffer: async () =>
                 buffer.buffer.slice(
@@ -200,11 +204,137 @@ describe('fetchThreadHtml', () => {
         } as Response);
         global.fetch = mockFetch;
 
-        const doc = await fetchThreadHtml('https://example.com/thread-sjis.htm');
+        const { doc } = await fetchThreadHtml('https://example.com/thread-sjis.htm');
 
         expect(mockFetch).toHaveBeenCalled();
         expect(doc.querySelector('title')?.textContent).toBe('あ');
 
         global.fetch = originalFetch;
+    });
+});
+
+describe('convertRelativeUrls', () => {
+    const BASE = 'https://tsumanne.net/si/data/2025/01/01/1234567/index.htm';
+
+    function makeNodes(html: string): Node[] {
+        const doc = new DOMParser().parseFromString(
+            `<div>${html}</div>`,
+            'text/html',
+        );
+        return Array.from(doc.body.firstElementChild!.childNodes).map(
+            (n) => document.importNode(n, true),
+        );
+    }
+
+    test('ファイル名のみ相対URLを絶対URLに変換する', () => {
+        const nodes = makeNodes('<a href="1761814517439.jpg">img</a>');
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('href')).toBe(
+            'https://tsumanne.net/si/data/2025/01/01/1234567/1761814517439.jpg',
+        );
+    });
+
+    test('ルート相対パスを変換する', () => {
+        const base = 'https://may.2chan.net/b/res/1368544718.htm';
+        const nodes = makeNodes('<a href="/b/res/1373518198.htm">link</a>');
+        convertRelativeUrls(nodes, base);
+        expect((nodes[0] as Element).getAttribute('href')).toBe(
+            'https://may.2chan.net/b/res/1373518198.htm',
+        );
+    });
+
+    test('プロトコル相対URLを変換する', () => {
+        const base = 'https://may.2chan.net/b/res/1234567890.htm';
+        const nodes = makeNodes('<a href="//dec.2chan.net/85/futaba.htm">link</a>');
+        convertRelativeUrls(nodes, base);
+        expect((nodes[0] as Element).getAttribute('href')).toBe(
+            'https://dec.2chan.net/85/futaba.htm',
+        );
+    });
+
+    test('絶対URLはそのまま保持される', () => {
+        const nodes = makeNodes('<a href="https://example.com/page.html">link</a>');
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('href')).toBe(
+            'https://example.com/page.html',
+        );
+    });
+
+    test('フラグメントのみのリンクは変換しない', () => {
+        const nodes = makeNodes('<a href="#r5">anchor</a>');
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('href')).toBe('#r5');
+    });
+
+    test('特殊スキームは変換しない', () => {
+        const nodes = makeNodes(
+            '<a href="javascript:void(0)">js</a><a href="mailto:user@example.com">mail</a>',
+        );
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('href')).toBe(
+            'javascript:void(0)',
+        );
+        expect((nodes[1] as Element).getAttribute('href')).toBe(
+            'mailto:user@example.com',
+        );
+    });
+
+    test('URL解決で例外が出てもエラーにならない', () => {
+        const nodes = makeNodes('<a href="http://[invalid">link</a>');
+        expect(() => convertRelativeUrls(nodes, BASE)).not.toThrow();
+        expect((nodes[0] as Element).getAttribute('href')).toBe(
+            'http://[invalid',
+        );
+    });
+
+    test('ネストした要素も変換される', () => {
+        const nodes = makeNodes(
+            '<div><div><a href="foo.htm">link</a><img src="bar.jpg"></div></div>',
+        );
+        convertRelativeUrls(nodes, BASE);
+        const a = (nodes[0] as Element).querySelector('a');
+        const img = (nodes[0] as Element).querySelector('img');
+        expect(a?.getAttribute('href')).toBe(
+            'https://tsumanne.net/si/data/2025/01/01/1234567/foo.htm',
+        );
+        expect(img?.getAttribute('src')).toBe(
+            'https://tsumanne.net/si/data/2025/01/01/1234567/bar.jpg',
+        );
+    });
+
+    test('ルートノード自体が対象要素の場合も変換される', () => {
+        const nodes = makeNodes('<a href="page.htm">link</a>');
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('href')).toBe(
+            'https://tsumanne.net/si/data/2025/01/01/1234567/page.htm',
+        );
+    });
+
+    test('対象外要素は変換しない', () => {
+        const nodes = makeNodes(
+            '<form action="submit.php"></form><iframe src="frame.htm"></iframe>',
+        );
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('action')).toBe('submit.php');
+        expect((nodes[1] as Element).getAttribute('src')).toBe('frame.htm');
+    });
+
+    test('srcset属性は変換しない', () => {
+        const nodes = makeNodes('<img src="img.jpg" srcset="small.jpg 1x, large.jpg 2x">');
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('srcset')).toBe(
+            'small.jpg 1x, large.jpg 2x',
+        );
+        expect((nodes[0] as Element).getAttribute('src')).toBe(
+            'https://tsumanne.net/si/data/2025/01/01/1234567/img.jpg',
+        );
+    });
+
+    test('データURIは変換しない', () => {
+        const nodes = makeNodes('<img src="data:image/png;base64,iVBORw0KG">');
+        convertRelativeUrls(nodes, BASE);
+        expect((nodes[0] as Element).getAttribute('src')).toBe(
+            'data:image/png;base64,iVBORw0KG',
+        );
     });
 });
